@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>Reloj de Fibonacci</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <style>
+      button, [role="button"], select, summary, input:not([type="checkbox"], [type="radio"]) { min-height: 2rem; }
+
+      :root {
+        --bg: #f4f1ea;
+        --surface: #fffdf8;
+        --ink: #1c1a16;
+        --ink-soft: #5c564c;
+        --line: #ddd5c6;
+        --accent: #b07d2b;
+        --sq-off: #e3ddcf;
+        --sq-off-ink: #8a8271;
+        --sq-h: #d93a2b;
+        --sq-m: #1f9d63;
+        --sq-b: #2f5fd0;
+        --sq-ink: #ffffff;
+        --chip-bg: #ece7da;
+        --shadow: 0 18px 40px rgba(60, 48, 20, 0.14);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #12100d;
+          --surface: #1b1813;
+          --ink: #f2ede1;
+          --ink-soft: #a89e8b;
+          --line: #37312a;
+          --accent: #e0aa4e;
+          --sq-off: #2a261e;
+          --sq-off-ink: #6f675a;
+          --sq-h: #e5484d;
+          --sq-m: #2fbf71;
+          --sq-b: #4f7df0;
+          --chip-bg: #26221b;
+          --shadow: 0 18px 44px rgba(0, 0, 0, 0.5);
+        }
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "Archivo", system-ui, -apple-system, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      main {
+        max-width: 46rem;
+        margin: 0 auto;
+        padding: 2rem 1.25rem 3.5rem;
+      }
+
+      h1 {
+        font-size: clamp(1.9rem, 6vw, 2.9rem);
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        line-height: 1.05;
+        margin: 0 0 0.6rem;
+      }
+      .lede {
+        color: var(--ink-soft);
+        font-size: 1.05rem;
+        line-height: 1.55;
+        margin: 0 0 1.75rem;
+        max-width: 34rem;
+      }
+      .lede strong { color: var(--ink); }
+
+      /* ---------- El reloj ---------- */
+      .clock-frame {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: clamp(0.75rem, 3vw, 1.25rem);
+        box-shadow: var(--shadow);
+      }
+      .clock {
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        grid-template-rows: repeat(5, 1fr);
+        gap: clamp(5px, 1.4vw, 10px);
+        aspect-ratio: 8 / 5;
+      }
+      .sq {
+        border-radius: clamp(6px, 1.6vw, 12px);
+        background: var(--sq-off);
+        color: var(--sq-off-ink);
+        position: relative;
+        transition: background-color 0.7s ease, color 0.7s ease;
+        overflow: hidden;
+      }
+      .sq .num {
+        position: absolute;
+        right: 8%;
+        bottom: 4%;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-weight: 600;
+        line-height: 1;
+        opacity: 0.9;
+        transition: opacity 0.3s ease;
+      }
+      .sq5 .num { font-size: clamp(1.6rem, 7vw, 3rem); }
+      .sq3 .num { font-size: clamp(1.2rem, 5vw, 2.1rem); }
+      .sq2 .num { font-size: clamp(0.95rem, 3.6vw, 1.5rem); }
+      .sq1 .num { font-size: clamp(0.7rem, 2.6vw, 1rem); right: 10%; bottom: 6%; }
+      .hide-nums .num { opacity: 0; }
+      .sq5 { grid-area: 1 / 1 / 6 / 6; }
+      .sq3 { grid-area: 1 / 6 / 4 / 9; }
+      .sq2 { grid-area: 4 / 6 / 6 / 8; }
+      .sq1a { grid-area: 4 / 8 / 5 / 9; }
+      .sq1b { grid-area: 5 / 8 / 6 / 9; }
+      .sq.h { background: var(--sq-h); color: var(--sq-ink); }
+      .sq.m { background: var(--sq-m); color: var(--sq-ink); }
+      .sq.b { background: var(--sq-b); color: var(--sq-ink); }
+
+      /* Barra de segundos dentro del bloque de 5 minutos */
+      .tick-track {
+        height: 4px;
+        background: var(--chip-bg);
+        border-radius: 99px;
+        margin-top: clamp(0.75rem, 3vw, 1.25rem);
+        overflow: hidden;
+      }
+      .tick-fill {
+        height: 100%;
+        width: 0%;
+        background: var(--accent);
+        border-radius: 99px;
+      }
+
+      /* ---------- Lectura digital y desglose ---------- */
+      .readout {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 0.5rem 1.25rem;
+        margin-top: 1.5rem;
+      }
+      .digital {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: clamp(2.2rem, 8vw, 3.2rem);
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        line-height: 1;
+      }
+      .digital .sec { font-size: 0.45em; color: var(--ink-soft); font-weight: 500; }
+      .dateline { color: var(--ink-soft); font-size: 1rem; }
+      .dateline::first-letter { text-transform: uppercase; }
+
+      .breakdown {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        margin-top: 1.1rem;
+      }
+      .chip {
+        background: var(--chip-bg);
+        border-radius: 10px;
+        padding: 0.55rem 0.85rem;
+        font-size: 0.95rem;
+        line-height: 1.35;
+      }
+      .chip .dot {
+        display: inline-block;
+        width: 0.65em; height: 0.65em;
+        border-radius: 3px;
+        margin-right: 0.45em;
+        vertical-align: baseline;
+      }
+      .chip b { font-family: "IBM Plex Mono", ui-monospace, monospace; font-weight: 600; }
+      .dot-h { background: var(--sq-h); }
+      .dot-m { background: var(--sq-m); }
+      .dot-b { background: var(--sq-b); }
+
+      /* ---------- Controles ---------- */
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        margin-top: 1.6rem;
+      }
+      .btn {
+        font: inherit;
+        font-size: 0.95rem;
+        font-weight: 600;
+        padding: 0.55rem 1.05rem;
+        min-height: 2.75rem;
+        border-radius: 99px;
+        border: 1px solid var(--line);
+        background: var(--surface);
+        color: var(--ink);
+        cursor: pointer;
+      }
+      .btn:hover { border-color: var(--accent); }
+      .btn[aria-pressed="true"] {
+        background: var(--ink);
+        color: var(--bg);
+        border-color: var(--ink);
+      }
+      .btn.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+      @media (prefers-color-scheme: dark) {
+        .btn.primary { color: #1c1503; }
+      }
+      .btn[hidden] { display: none; }
+
+      /* ---------- Cómo se lee ---------- */
+      section.howto {
+        margin-top: 3rem;
+        border-top: 1px solid var(--line);
+        padding-top: 2rem;
+      }
+      section.howto h2 {
+        font-size: 1.45rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        margin: 0 0 0.75rem;
+      }
+      section.howto p {
+        color: var(--ink-soft);
+        line-height: 1.6;
+        margin: 0 0 1rem;
+        max-width: 36rem;
+      }
+      section.howto p strong { color: var(--ink); }
+      .legend {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+        gap: 0.6rem;
+        margin: 1.25rem 0 1.5rem;
+      }
+      .legend div {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        font-size: 0.95rem;
+        font-weight: 500;
+      }
+      .swatch {
+        width: 1.4rem; height: 1.4rem;
+        border-radius: 6px;
+        flex: none;
+      }
+      .sw-h { background: var(--sq-h); }
+      .sw-m { background: var(--sq-m); }
+      .sw-b { background: var(--sq-b); }
+      .sw-o { background: var(--sq-off); border: 1px solid var(--line); }
+      ol.steps { margin: 0; padding-left: 1.3rem; color: var(--ink-soft); line-height: 1.65; }
+      ol.steps li { margin-bottom: 0.4rem; }
+      ol.steps strong { color: var(--ink); }
+      .example {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 1rem 1.15rem;
+        margin-top: 1.25rem;
+        line-height: 1.6;
+        color: var(--ink-soft);
+      }
+      .example strong { color: var(--ink); }
+      .example .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+
+      footer {
+        margin-top: 3rem;
+        color: var(--ink-soft);
+        font-size: 0.9rem;
+        line-height: 1.55;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .sq { transition: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Reloj de Fibonacci</h1>
+      <p class="lede">
+        Cinco cuadrados con los tamaños de la sucesión de Fibonacci —<strong>1, 1, 2, 3 y 5</strong>—
+        se encienden de colores para decir la hora. No hay manecillas ni dígitos en el reloj:
+        la hora se <strong>suma</strong>.
+      </p>
+
+      <div class="clock-frame">
+        <div class="clock" id="clock" role="img" aria-label="Reloj de Fibonacci">
+          <div class="sq sq5" data-v="5"><span class="num">5</span></div>
+          <div class="sq sq3" data-v="3"><span class="num">3</span></div>
+          <div class="sq sq2" data-v="2"><span class="num">2</span></div>
+          <div class="sq sq1 sq1a" data-v="1"><span class="num">1</span></div>
+          <div class="sq sq1 sq1b" data-v="1"><span class="num">1</span></div>
+        </div>
+        <div class="tick-track" aria-hidden="true"><div class="tick-fill" id="tickFill"></div></div>
+      </div>
+
+      <div class="readout">
+        <div class="digital" id="digital">--:--<span class="sec">--</span></div>
+        <div class="dateline" id="dateline"></div>
+      </div>
+
+      <div class="breakdown" id="breakdown">
+        <div class="chip"><span class="dot dot-h"></span><span class="dot dot-b" style="margin-left:-0.35em"></span>Horas: <b id="hoursSum">–</b></div>
+        <div class="chip"><span class="dot dot-m"></span><span class="dot dot-b" style="margin-left:-0.35em"></span>Minutos: <b id="minutesSum">–</b></div>
+      </div>
+
+      <div class="controls">
+        <button class="btn" id="btnLive" aria-pressed="true">En vivo</button>
+        <button class="btn" id="btnPractice" aria-pressed="false">Practicar</button>
+        <button class="btn primary" id="btnNew" hidden>Nueva hora</button>
+        <button class="btn" id="btnReveal" hidden>Revelar la hora</button>
+        <button class="btn" id="btnNums" aria-pressed="true">Números visibles</button>
+      </div>
+
+      <section class="howto">
+        <h2>Cómo se lee</h2>
+        <p>
+          Cada cuadrado vale su tamaño: <strong>5, 3, 2, 1 y 1</strong>. Según el color con el que
+          se encienda, ese valor cuenta para la hora, para los minutos, o para los dos.
+        </p>
+        <div class="legend">
+          <div><span class="swatch sw-h"></span> Rojo · solo horas</div>
+          <div><span class="swatch sw-m"></span> Verde · solo minutos</div>
+          <div><span class="swatch sw-b"></span> Azul · horas y minutos</div>
+          <div><span class="swatch sw-o"></span> Apagado · no cuenta</div>
+        </div>
+        <ol class="steps">
+          <li><strong>La hora:</strong> suma los cuadrados rojos y azules. El reloj usa formato de 12 horas.</li>
+          <li><strong>Los minutos:</strong> suma los cuadrados verdes y azules, y multiplica el resultado por 5.</li>
+          <li>Por eso el reloj cambia de dibujo cada 5 minutos: es su precisión natural.</li>
+        </ol>
+        <div class="example" id="example"></div>
+      </section>
+
+      <footer>
+        La sucesión de Fibonacci (1, 1, 2, 3, 5, 8…) aparece sumando los dos números anteriores.
+        Con los primeros cinco términos se puede formar cualquier hora entre 1 y 12 y cualquier
+        bloque de 5 minutos: por eso este reloj funciona solo con cinco cuadrados.
+      </footer>
+    </main>
+
+    <script>
+      (function () {
+        var VALUES = [5, 3, 2, 1, 1]; // en el orden de los cuadrados en el DOM
+        var squares = Array.prototype.slice.call(document.querySelectorAll(".sq"));
+        var digitalEl = document.getElementById("digital");
+        var datelineEl = document.getElementById("dateline");
+        var hoursSumEl = document.getElementById("hoursSum");
+        var minutesSumEl = document.getElementById("minutesSum");
+        var exampleEl = document.getElementById("example");
+        var tickFill = document.getElementById("tickFill");
+        var clockEl = document.getElementById("clock");
+
+        var btnLive = document.getElementById("btnLive");
+        var btnPractice = document.getElementById("btnPractice");
+        var btnNew = document.getElementById("btnNew");
+        var btnReveal = document.getElementById("btnReveal");
+        var btnNums = document.getElementById("btnNums");
+
+        var mode = "live";           // "live" | "practice"
+        var revealed = true;
+        var practiceTime = null;     // {h: 1-12, mUnits: 0-11}
+        var lastShown = null;        // último tiempo dibujado {h, mUnits}
+
+        // Descompone un valor (0-12) como suma de un subconjunto de [5,3,2,1,1],
+        // voraz de mayor a menor. Devuelve un arreglo de booleanos por cuadrado.
+        function decompose(value) {
+          var used = [false, false, false, false, false];
+          var rest = value;
+          for (var i = 0; i < VALUES.length; i++) {
+            if (VALUES[i] <= rest) {
+              used[i] = true;
+              rest -= VALUES[i];
+            }
+          }
+          return used;
+        }
+
+        function partsFor(used) {
+          var parts = [];
+          for (var i = 0; i < VALUES.length; i++) {
+            if (used[i]) parts.push(VALUES[i]);
+          }
+          return parts;
+        }
+
+        function fmtParts(parts) {
+          return parts.length ? parts.join(" + ") : "0";
+        }
+
+        function render(h12, mUnits) {
+          lastShown = { h: h12, mUnits: mUnits };
+          var hUsed = decompose(h12);
+          var mUsed = decompose(mUnits);
+          squares.forEach(function (sq, i) {
+            sq.classList.remove("h", "m", "b");
+            if (hUsed[i] && mUsed[i]) sq.classList.add("b");
+            else if (hUsed[i]) sq.classList.add("h");
+            else if (mUsed[i]) sq.classList.add("m");
+          });
+          clockEl.setAttribute(
+            "aria-label",
+            "Reloj de Fibonacci: las " + h12 + " y " + (mUnits * 5) + " minutos"
+          );
+          return { hUsed: hUsed, mUsed: mUsed };
+        }
+
+        function describe(h12, mUnits, hUsed, mUsed) {
+          // Cuadrados que cuentan para cada cosa (rojos+azules / verdes+azules)
+          var hParts = [], mParts = [];
+          for (var i = 0; i < VALUES.length; i++) {
+            if (hUsed[i]) hParts.push(VALUES[i]);
+            if (mUsed[i]) mParts.push(VALUES[i]);
+          }
+          var hTotal = hParts.reduce(function (a, b) { return a + b; }, 0);
+          var mTotal = mParts.reduce(function (a, b) { return a + b; }, 0);
+          hoursSumEl.textContent = fmtParts(hParts) + " = " + hTotal;
+          minutesSumEl.textContent =
+            "(" + fmtParts(mParts) + ") × 5 = " + mTotal * 5;
+          var mm = String(mUnits * 5).padStart(2, "0");
+          exampleEl.innerHTML =
+            "<strong>Ejemplo con la hora actual del reloj:</strong> los cuadrados de las horas suman " +
+            '<span class="mono">' + fmtParts(hParts) + " = " + hTotal + "</span> y los de los minutos suman " +
+            '<span class="mono">' + fmtParts(mParts) + " = " + mTotal + "</span>, que por 5 da " +
+            '<span class="mono">' + mTotal * 5 + '</span>. Son las <strong>' + h12 + ":" + mm + "</strong>.";
+        }
+
+        function pad(n) { return String(n).padStart(2, "0"); }
+
+        function tick() {
+          if (mode !== "live") return;
+          var now = new Date();
+          var h24 = now.getHours();
+          var h12 = h24 % 12;
+          if (h12 === 0) h12 = 12;
+          var mUnits = Math.floor(now.getMinutes() / 5);
+          var r = render(h12, mUnits);
+          describe(h12, mUnits, r.hUsed, r.mUsed);
+          digitalEl.innerHTML =
+            pad(h24) + ":" + pad(now.getMinutes()) +
+            '<span class="sec"> ' + pad(now.getSeconds()) + "</span>";
+          datelineEl.textContent = now.toLocaleDateString("es-MX", {
+            weekday: "long", day: "numeric", month: "long", year: "numeric"
+          });
+          // Avance dentro del bloque actual de 5 minutos
+          var intoBlock = (now.getMinutes() % 5) * 60 + now.getSeconds();
+          tickFill.style.width = (intoBlock / 300 * 100).toFixed(1) + "%";
+        }
+
+        function newPractice() {
+          var h = 1 + Math.floor(Math.random() * 12);
+          var m = Math.floor(Math.random() * 12);
+          practiceTime = { h: h, mUnits: m };
+          revealed = false;
+          render(h, m);
+          digitalEl.textContent = "¿ ? : ? ?";
+          datelineEl.textContent = "Adivina la hora con los cuadrados";
+          hoursSumEl.textContent = "…";
+          minutesSumEl.textContent = "…";
+          exampleEl.innerHTML =
+            "<strong>Modo práctica:</strong> suma los rojos y azules para la hora, " +
+            "y los verdes y azules por 5 para los minutos. Cuando tengas tu respuesta, pulsa «Revelar la hora».";
+          tickFill.style.width = "0%";
+          btnReveal.textContent = "Revelar la hora";
+        }
+
+        function revealPractice() {
+          if (!practiceTime) return;
+          revealed = !revealed;
+          if (revealed) {
+            var r = render(practiceTime.h, practiceTime.mUnits);
+            describe(practiceTime.h, practiceTime.mUnits, r.hUsed, r.mUsed);
+            digitalEl.textContent = practiceTime.h + ":" + pad(practiceTime.mUnits * 5);
+            datelineEl.textContent = "Esa era la hora escondida";
+            btnReveal.textContent = "Ocultar de nuevo";
+          } else {
+            digitalEl.textContent = "¿ ? : ? ?";
+            datelineEl.textContent = "Adivina la hora con los cuadrados";
+            hoursSumEl.textContent = "…";
+            minutesSumEl.textContent = "…";
+            btnReveal.textContent = "Revelar la hora";
+          }
+        }
+
+        function setMode(next) {
+          mode = next;
+          btnLive.setAttribute("aria-pressed", mode === "live" ? "true" : "false");
+          btnPractice.setAttribute("aria-pressed", mode === "practice" ? "true" : "false");
+          var practice = mode === "practice";
+          btnNew.hidden = !practice;
+          btnReveal.hidden = !practice;
+          if (practice) newPractice();
+          else tick();
+        }
+
+        btnLive.addEventListener("click", function () { setMode("live"); });
+        btnPractice.addEventListener("click", function () { setMode("practice"); });
+        btnNew.addEventListener("click", newPractice);
+        btnReveal.addEventListener("click", revealPractice);
+        btnNums.addEventListener("click", function () {
+          var on = btnNums.getAttribute("aria-pressed") === "true";
+          btnNums.setAttribute("aria-pressed", on ? "false" : "true");
+          btnNums.textContent = on ? "Números ocultos" : "Números visibles";
+          clockEl.classList.toggle("hide-nums", on);
+        });
+
+        tick();
+        setInterval(tick, 500);
+      })();
+    </script>
+  </body>
+</html>
