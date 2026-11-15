@@ -138,6 +138,30 @@
         border-radius: 99px;
       }
 
+      /* ---------- Vista de manecillas ---------- */
+      [hidden] { display: none !important; }
+      .hands-wrap { display: flex; justify-content: center; }
+      .dial { width: min(100%, 26rem); height: auto; display: block; }
+      .dial-face { fill: var(--chip-bg); opacity: 0.45; }
+      .dial-ring { fill: none; stroke: var(--line); stroke-width: 2; }
+      .spiral { fill: none; stroke: var(--accent); stroke-width: 2; opacity: 0.5; stroke-linecap: round; }
+      .tick { stroke: var(--ink-soft); stroke-width: 2; opacity: 0.5; }
+      .tick.hour { stroke: var(--ink); stroke-width: 3.5; opacity: 0.85; }
+      .dial-num {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-weight: 600;
+        fill: var(--ink);
+        text-anchor: middle;
+        dominant-baseline: central;
+        transition: opacity 0.3s ease;
+      }
+      .hide-nums .dial-num { opacity: 0; }
+      .hand-h { fill: var(--sq-h); }
+      .hand-m { fill: var(--sq-m); }
+      .hand-s { stroke: var(--accent); stroke-width: 2.5; stroke-linecap: round; }
+      .hand-s-dot { fill: var(--accent); }
+      .center-cap { fill: var(--accent); stroke: var(--surface); stroke-width: 2.5; }
+
       /* ---------- Lectura digital y desglose ---------- */
       .readout {
         display: flex;
@@ -236,6 +260,11 @@
         max-width: 36rem;
       }
       section.howto p strong { color: var(--ink); }
+      section.howto h3 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin: 1.5rem 0 0.5rem;
+      }
       .legend {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
@@ -290,19 +319,34 @@
       <h1>Reloj de Fibonacci</h1>
       <p class="lede">
         Cinco cuadrados con los tamaños de la sucesión de Fibonacci —<strong>1, 1, 2, 3 y 5</strong>—
-        se encienden de colores para decir la hora. No hay manecillas ni dígitos en el reloj:
-        la hora se <strong>suma</strong>.
+        se encienden de colores para decir la hora: la hora se <strong>suma</strong>. Y si prefieres,
+        también puedes verla <strong>con manecillas</strong>, sobre una carátula con la espiral de Fibonacci.
       </p>
 
       <div class="clock-frame">
-        <div class="clock" id="clock" role="img" aria-label="Reloj de Fibonacci">
-          <div class="sq sq5" data-v="5"><span class="num">5</span></div>
-          <div class="sq sq3" data-v="3"><span class="num">3</span></div>
-          <div class="sq sq2" data-v="2"><span class="num">2</span></div>
-          <div class="sq sq1 sq1a" data-v="1"><span class="num">1</span></div>
-          <div class="sq sq1 sq1b" data-v="1"><span class="num">1</span></div>
+        <div id="squaresView">
+          <div class="clock" id="clock" role="img" aria-label="Reloj de Fibonacci">
+            <div class="sq sq5" data-v="5"><span class="num">5</span></div>
+            <div class="sq sq3" data-v="3"><span class="num">3</span></div>
+            <div class="sq sq2" data-v="2"><span class="num">2</span></div>
+            <div class="sq sq1 sq1a" data-v="1"><span class="num">1</span></div>
+            <div class="sq sq1 sq1b" data-v="1"><span class="num">1</span></div>
+          </div>
+          <div class="tick-track" aria-hidden="true"><div class="tick-fill" id="tickFill"></div></div>
         </div>
-        <div class="tick-track" aria-hidden="true"><div class="tick-fill" id="tickFill"></div></div>
+        <div class="hands-wrap" id="handsView" hidden>
+          <svg class="dial" id="dialSvg" viewBox="0 0 400 400" role="img" aria-label="Reloj de manecillas">
+            <circle class="dial-face" cx="200" cy="200" r="186"></circle>
+            <circle class="dial-ring" cx="200" cy="200" r="186"></circle>
+            <path class="spiral" id="spiralPath" d=""></path>
+            <g id="ticks"></g>
+            <g id="nums"></g>
+            <g id="handHour"><polygon class="hand-h" points="200,100 208,206 200,218 192,206"></polygon></g>
+            <g id="handMinute"><polygon class="hand-m" points="200,56 205.5,206 200,216 194.5,206"></polygon></g>
+            <g id="handSecond"><line class="hand-s" x1="200" y1="224" x2="200" y2="50"></line><circle class="hand-s-dot" cx="200" cy="50" r="4.5"></circle></g>
+            <circle class="center-cap" cx="200" cy="200" r="8"></circle>
+          </svg>
+        </div>
       </div>
 
       <div class="readout">
@@ -320,6 +364,8 @@
         <button class="btn" id="btnPractice" aria-pressed="false">Practicar</button>
         <button class="btn primary" id="btnNew" hidden>Nueva hora</button>
         <button class="btn" id="btnReveal" hidden>Revelar la hora</button>
+        <button class="btn" id="btnViewSq" aria-pressed="true">Cuadrados</button>
+        <button class="btn" id="btnViewHands" aria-pressed="false">Manecillas</button>
         <button class="btn" id="btnNums" aria-pressed="true">Números visibles</button>
       </div>
 
@@ -340,6 +386,15 @@
           <li><strong>Los minutos:</strong> suma los cuadrados verdes y azules, y multiplica el resultado por 5.</li>
           <li>Por eso el reloj cambia de dibujo cada 5 minutos: es su precisión natural.</li>
         </ol>
+        <h3>Vista de manecillas</h3>
+        <p>
+          Con el botón <strong>«Manecillas»</strong> el mismo reloj se ve como uno clásico, parecido
+          al de madera de la foto que inspiró esta vista: la carátula lleva dibujada la
+          <strong>espiral dorada de Fibonacci</strong>, la manecilla <strong>roja</strong> marca las
+          horas y la <strong>verde</strong> los minutos —los mismos colores de los cuadrados— y la
+          dorada, más fina, los segundos. En esta vista la hora se lee directo, sin sumar; en el
+          modo práctica las manecillas marcan la hora escondida, para que la leas de la carátula.
+        </p>
         <div class="example" id="example"></div>
       </section>
 
@@ -361,17 +416,79 @@
         var exampleEl = document.getElementById("example");
         var tickFill = document.getElementById("tickFill");
         var clockEl = document.getElementById("clock");
+        var squaresEl = document.getElementById("squaresView");
+        var handsEl = document.getElementById("handsView");
+        var dialEl = document.getElementById("dialSvg");
+        var handHour = document.getElementById("handHour");
+        var handMinute = document.getElementById("handMinute");
+        var handSecond = document.getElementById("handSecond");
 
         var btnLive = document.getElementById("btnLive");
         var btnPractice = document.getElementById("btnPractice");
         var btnNew = document.getElementById("btnNew");
         var btnReveal = document.getElementById("btnReveal");
+        var btnViewSq = document.getElementById("btnViewSq");
+        var btnViewHands = document.getElementById("btnViewHands");
         var btnNums = document.getElementById("btnNums");
 
         var mode = "live";           // "live" | "practice"
+        var view = "squares";        // "squares" | "hands"
         var revealed = true;
         var practiceTime = null;     // {h: 1-12, mUnits: 0-11}
         var lastShown = null;        // último tiempo dibujado {h, mUnits}
+
+        // Construye la carátula de manecillas: marcas, números y la espiral dorada
+        (function buildDial() {
+          var NS = "http://www.w3.org/2000/svg";
+          var ticksG = document.getElementById("ticks");
+          var numsG = document.getElementById("nums");
+          var i, a, line, t;
+          for (i = 0; i < 60; i++) {
+            a = i * 6 * Math.PI / 180;
+            var isHour = i % 5 === 0;
+            var r1 = isHour ? 156 : 166;
+            line = document.createElementNS(NS, "line");
+            line.setAttribute("x1", (200 + Math.sin(a) * r1).toFixed(1));
+            line.setAttribute("y1", (200 - Math.cos(a) * r1).toFixed(1));
+            line.setAttribute("x2", (200 + Math.sin(a) * 178).toFixed(1));
+            line.setAttribute("y2", (200 - Math.cos(a) * 178).toFixed(1));
+            line.setAttribute("class", "tick" + (isHour ? " hour" : ""));
+            ticksG.appendChild(line);
+          }
+          for (i = 1; i <= 12; i++) {
+            a = i * 30 * Math.PI / 180;
+            t = document.createElementNS(NS, "text");
+            t.setAttribute("x", (200 + Math.sin(a) * 128).toFixed(1));
+            t.setAttribute("y", (200 - Math.cos(a) * 128).toFixed(1));
+            t.setAttribute("class", "dial-num");
+            t.setAttribute("font-size", "21");
+            t.textContent = i;
+            numsG.appendChild(t);
+          }
+          // Espiral dorada: el radio se reduce por el factor phi cada cuarto de vuelta
+          var phi = (1 + Math.sqrt(5)) / 2;
+          var d = "";
+          var steps = 220, maxT = Math.PI * 7;
+          for (i = 0; i <= steps; i++) {
+            var th = maxT * i / steps;
+            var rr = 152 * Math.pow(phi, -th / (Math.PI / 2));
+            d += (i === 0 ? "M" : "L") +
+              (200 + Math.cos(th) * rr).toFixed(1) + " " +
+              (200 + Math.sin(th) * rr).toFixed(1);
+          }
+          document.getElementById("spiralPath").setAttribute("d", d);
+        })();
+
+        function setHands(hDeg, mDeg, sDeg) {
+          handHour.setAttribute("transform", "rotate(" + hDeg.toFixed(2) + " 200 200)");
+          handMinute.setAttribute("transform", "rotate(" + mDeg.toFixed(2) + " 200 200)");
+          if (sDeg === null || sDeg === undefined) {
+            handSecond.style.display = "none";
+          } else {
+            handSecond.style.display = "";
+            handSecond.setAttribute("transform", "rotate(" + sDeg.toFixed(2) + " 200 200)");
+          }
+        }
 
         // Descompone un valor (0-12) como suma de un subconjunto de [5,3,2,1,1],
         // voraz de mayor a menor. Devuelve un arreglo de booleanos por cuadrado.
@@ -413,6 +530,12 @@
             "aria-label",
             "Reloj de Fibonacci: las " + h12 + " y " + (mUnits * 5) + " minutos"
           );
+          // Las manecillas marcan el mismo tiempo, con precisión de bloque de 5 minutos
+          setHands((h12 % 12) * 30 + mUnits * 2.5, mUnits * 30, null);
+          dialEl.setAttribute(
+            "aria-label",
+            "Reloj de manecillas: las " + h12 + " y " + (mUnits * 5) + " minutos"
+          );
           return { hUsed: hUsed, mUsed: mUsed };
         }
 
@@ -453,6 +576,13 @@
           datelineEl.textContent = now.toLocaleDateString("es-MX", {
             weekday: "long", day: "numeric", month: "long", year: "numeric"
           });
+          // Manecillas con precisión de segundo en vivo
+          var secFrac = now.getSeconds() + now.getMilliseconds() / 1000;
+          setHands(
+            (h12 % 12) * 30 + now.getMinutes() * 0.5 + secFrac / 120,
+            now.getMinutes() * 6 + secFrac * 0.1,
+            secFrac * 6
+          );
           // Avance dentro del bloque actual de 5 minutos
           var intoBlock = (now.getMinutes() % 5) * 60 + now.getSeconds();
           tickFill.style.width = (intoBlock / 300 * 100).toFixed(1) + "%";
@@ -504,15 +634,29 @@
           else tick();
         }
 
+        function setView(next) {
+          view = next;
+          var hands = view === "hands";
+          squaresEl.hidden = hands;
+          handsEl.hidden = !hands;
+          btnViewSq.setAttribute("aria-pressed", hands ? "false" : "true");
+          btnViewHands.setAttribute("aria-pressed", hands ? "true" : "false");
+          if (mode === "live") tick();
+          else if (lastShown) render(lastShown.h, lastShown.mUnits);
+        }
+
         btnLive.addEventListener("click", function () { setMode("live"); });
         btnPractice.addEventListener("click", function () { setMode("practice"); });
         btnNew.addEventListener("click", newPractice);
         btnReveal.addEventListener("click", revealPractice);
+        btnViewSq.addEventListener("click", function () { setView("squares"); });
+        btnViewHands.addEventListener("click", function () { setView("hands"); });
         btnNums.addEventListener("click", function () {
           var on = btnNums.getAttribute("aria-pressed") === "true";
           btnNums.setAttribute("aria-pressed", on ? "false" : "true");
           btnNums.textContent = on ? "Números ocultos" : "Números visibles";
           clockEl.classList.toggle("hide-nums", on);
+          handsEl.classList.toggle("hide-nums", on);
         });
 
         tick();
