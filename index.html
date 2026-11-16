@@ -267,6 +267,7 @@
       .dial-tick { stroke: var(--p-dial); stroke-linecap: round; }
       .hand-min { fill: var(--p-hl); opacity: 1; }
       .hub { fill: var(--p-hl); }
+      .hand-spiral { fill: none; stroke: var(--p-hl); stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
       .hub-dot { fill: var(--p-num); stroke: none; opacity: 0.7; }
       /* ---------- Cielo vivo de la placa ---------- */
       .aurora {
@@ -1017,6 +1018,20 @@
           var dark = Math.min(1, Math.max(0, (-sunAlt(sLon, lst) - 3) / 11));
           auroraEl.style.opacity = (dark * 0.9).toFixed(2);
         }
+
+        // El minutero también es una espiral áurea (r ×φ cada 90°): nace en el
+        // buje y da ~1.5 vueltas hasta la carátula; su punta marca el minuto.
+        (function buildMinuteSpiral() {
+          var b = Math.log((1 + Math.sqrt(5)) / 2) / 90, r0 = 2.4, rT = 46;
+          var Th = Math.log(rT / r0) / b, d = "";
+          for (var i = 0; i <= 160; i++) {
+            var th = Th * i / 160, r = r0 * Math.exp(b * th), a = (-90 + th - Th) * Math.PI / 180;
+            d += (i ? "L" : "M") + (CENTER.x + r * Math.cos(a)).toFixed(2) + " " + (CENTER.y + r * Math.sin(a)).toFixed(2);
+          }
+          var p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          p.setAttribute("d", d); p.setAttribute("class", "hand-spiral");
+          handMinute.textContent = ""; handMinute.appendChild(p);
+        })();
 
         function setMinute(deg) {
           handMinute.setAttribute("transform", "rotate(" + deg.toFixed(2) + " " + CENTER.x + " " + CENTER.y + ")");
