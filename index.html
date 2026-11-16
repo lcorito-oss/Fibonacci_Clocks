@@ -790,18 +790,8 @@
           ring.setAttribute("cx", CENTER.x); ring.setAttribute("cy", CENTER.y);
           ring.setAttribute("r", 48); ring.setAttribute("class", "dial-ring");
           dial.appendChild(ring);
-          // Centro sutil: solo las 12 marcas de 5 en 5 minutos,
-          // cortas y tenues, sin aro ni círculo de fondo.
-          for (var mnt = 0; mnt < 60; mnt += 5) {
-            var p1 = polar(41.5, mnt * 6 - 90);
-            var p2 = polar(46.5, mnt * 6 - 90);
-            var ln = document.createElementNS(NS, "line");
-            ln.setAttribute("x1", p1.x.toFixed(1)); ln.setAttribute("y1", p1.y.toFixed(1));
-            ln.setAttribute("x2", p2.x.toFixed(1)); ln.setAttribute("y2", p2.y.toFixed(1));
-            ln.setAttribute("class", "dial-tick");
-            ln.setAttribute("stroke-width", 1.6);
-            dial.appendChild(ln);
-          }
+          // Las rayitas de la carátula del reloj antiguo se quitaron:
+          // ya no van las 12 marcas del dial circular de minutos.
           // La espiral como figura: una cinta ancha afuera (radio ~334,
           // más grande que la placa) que se afina hasta enroscarse en
           // el centro. Se construye desplazando la curva a ambos lados
