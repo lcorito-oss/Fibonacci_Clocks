@@ -396,11 +396,71 @@
 
       /* ---------- Controles ---------- */
       .controls {
-        display: none;
+        display: flex;
         flex-wrap: wrap;
         justify-content: center;
         gap: 0.45rem;
         margin-top: 1.6rem;
+      }
+      .controls.is-hidden {
+        display: none;
+      }
+      /* ---------- Barra de vista (siempre visible) ---------- */
+      .viewbar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.6rem;
+        margin-top: 0.9rem;
+      }
+      .view-switch {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        font: inherit;
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--ink-soft);
+        background: transparent;
+        border: 1px solid var(--line);
+        border-radius: 99px;
+        padding: 0.22rem 0.55rem;
+        cursor: pointer;
+      }
+      .view-switch .vs-label { opacity: 0.55; }
+      .view-switch .vs-hands { opacity: 1; }
+      .view-switch.is-squares .vs-hands { opacity: 0.55; }
+      .view-switch.is-squares .vs-sq { opacity: 1; }
+      .view-switch .vs-track {
+        width: 1.9rem;
+        height: 1rem;
+        border-radius: 99px;
+        background: var(--line);
+        position: relative;
+        flex-shrink: 0;
+      }
+      .view-switch .vs-knob {
+        position: absolute;
+        top: 0.12rem;
+        left: 0.12rem;
+        width: 0.76rem;
+        height: 0.76rem;
+        border-radius: 50%;
+        background: var(--ink);
+        transition: left 0.15s ease;
+      }
+      .view-switch.is-squares .vs-knob { left: 1.02rem; }
+      .btn-mini {
+        font: inherit;
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--ink-soft);
+        background: transparent;
+        border: 1px solid var(--line);
+        border-radius: 99px;
+        padding: 0.28rem 0.6rem;
+        min-height: 1.7rem;
+        cursor: pointer;
       }
       .btn {
         font: inherit;
@@ -546,12 +606,21 @@
         <div class="dateline" id="dateline"></div>
       </div>
 
+      <div class="viewbar">
+        <button class="view-switch" id="viewSwitch" role="switch" aria-checked="false" title="Cambiar a Cuadrados">
+          <span class="vs-label vs-hands">Manecillas</span>
+          <span class="vs-track"><span class="vs-knob"></span></span>
+          <span class="vs-label vs-sq">Cuadrados</span>
+        </button>
+        <button class="btn-mini" id="btnControlsToggle" aria-expanded="false" title="Mostrar controles">Controles</button>
+      </div>
+
       <div class="breakdown" id="breakdown" hidden>
         <div class="chip"><span class="dot dot-h"></span><span class="dot dot-b" style="margin-left:-0.35em"></span>Horas: <b id="hoursSum">–</b></div>
         <div class="chip"><span class="dot dot-m"></span><span class="dot dot-b" style="margin-left:-0.35em"></span>Minutos: <b id="minutesSum">–</b></div>
       </div>
 
-      <div class="controls">
+      <div class="controls is-hidden" id="controlsBar">
         <button class="btn" id="btnLive" aria-pressed="true">En vivo</button>
         <button class="btn" id="btnPractice" aria-pressed="false">Practicar</button>
         <button class="btn primary" id="btnNew" hidden>Nueva hora</button>
@@ -596,6 +665,9 @@
         var btnReveal = document.getElementById("btnReveal");
         var btnViewSq = document.getElementById("btnViewSq");
         var btnViewHands = document.getElementById("btnViewHands");
+        var viewSwitch = document.getElementById("viewSwitch");
+        var btnControlsToggle = document.getElementById("btnControlsToggle");
+        var controlsBar = document.getElementById("controlsBar");
         var btnNums = document.getElementById("btnNums");
         var readHintEl = document.getElementById("readHint");
 
@@ -1300,6 +1372,12 @@
         // (fuera cobre y plata); el degradado blackGrad y la paleta
         // data-material="negro" quedan fijos en el marcado.
 
+        function syncViewSwitch() {
+          var isSq = view === "squares";
+          viewSwitch.setAttribute("aria-checked", isSq ? "true" : "false");
+          viewSwitch.classList.toggle("is-squares", isSq);
+          viewSwitch.setAttribute("title", isSq ? "Cambiar a Manecillas" : "Cambiar a Cuadrados");
+        }
         function setView(next) {
           view = next;
           var hands = view === "hands";
@@ -1308,6 +1386,7 @@
           breakdownEl.hidden = hands; // las fichas de Horas y Minutos solo van con los cuadrados
           btnViewSq.setAttribute("aria-pressed", hands ? "false" : "true");
           btnViewHands.setAttribute("aria-pressed", hands ? "true" : "false");
+          syncViewSwitch();
           readHintEl.textContent = hands
             ? "La espiral cruza el número de la hora en curso, que se enciende en rosa igual que su marquita. La manecilla del centro marca los minutos."
             : "Suma los rojos y azules para la hora; los verdes y azules, por 5, dan los minutos.";
@@ -1321,6 +1400,13 @@
         btnReveal.addEventListener("click", revealPractice);
         btnViewSq.addEventListener("click", function () { setView("squares"); });
         btnViewHands.addEventListener("click", function () { setView("hands"); });
+        viewSwitch.addEventListener("click", function () { setView(view === "hands" ? "squares" : "hands"); });
+        btnControlsToggle.addEventListener("click", function () {
+          var hiddenNow = controlsBar.classList.toggle("is-hidden");
+          btnControlsToggle.setAttribute("aria-expanded", hiddenNow ? "false" : "true");
+          btnControlsToggle.textContent = hiddenNow ? "Controles" : "Ocultar";
+        });
+        syncViewSwitch();
         btnNums.addEventListener("click", function () {
           var on = btnNums.getAttribute("aria-pressed") === "true";
           btnNums.setAttribute("aria-pressed", on ? "false" : "true");
