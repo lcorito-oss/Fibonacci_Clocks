@@ -173,9 +173,10 @@
       /* ---------- Vista de manecillas: placa y espiral ---------- */
       [hidden] { display: none !important; }
       /* Fondo tipo pared oscura en ambos modos, como las paredes de las
-         fotos: la placa plateada se despega bien del fondo. Las líneas
-         en espiral de la placa quedan completas dentro de ella, con
-         margen por todos lados. */
+         fotos: la placa se despega bien del fondo, y la espiral
+         principal —más grande que la placa— se sigue leyendo cuando
+         su punta se sale por los lados, como en la imagen de
+         referencia. */
       .hands-wrap {
         position: relative;
         display: flex;
@@ -202,6 +203,7 @@
         --p-star1: #2e333d;
         --p-star2: #3d4c74;
         --p-star3: #6d5a33;
+        --p-ghostop: 0.2;
       }
       .hands-wrap[data-material="cobre"] {
         --p-num: #2e1a06;
@@ -221,6 +223,7 @@
         --p-star1: #4a2c10;
         --p-star2: #274035;
         --p-star3: #6e5320;
+        --p-ghostop: 0.32;
       }
       /* Cielo estrellado de fondo, detrás de la placa */
       #bgStars {
@@ -251,6 +254,7 @@
         --p-star1: #c9cdd6;
         --p-star2: #8fa3d9;
         --p-star3: #d9b96a;
+        --p-ghostop: 0.22;
       }
       .star-a { fill: var(--p-star1); }
       .star-b { fill: var(--p-star2); }
@@ -261,16 +265,18 @@
         stroke-width: 2;
         filter: drop-shadow(0 16px 20px rgba(8, 10, 14, 0.55));
       }
-      /* Las líneas de las horas, como en la foto de referencia: una
-         línea delgada por hora, que nace junto al centro, se curva
-         siempre hacia el mismo lado y termina junto a su número. La
-         espiral gruesa ya no se dibuja. La línea de la hora en curso
-         se enciende en rosa, igual que su número y su marquita. */
-      .spiral-arm { display: none; }
-      .spiral-out { display: none; }
-      .cast { filter: none; }
-      .hour-line { fill: none; stroke: var(--p-spiral); stroke-width: 1.6; stroke-linecap: round; opacity: 0.55; }
-      .hour-line.on { stroke: var(--p-hl); stroke-width: 2.8; opacity: 1; }
+      /* Las líneas y la espiral de la imagen de referencia: sobre la
+         placa van grabadas las 12 espirales finas —la misma curva
+         logarítmica repetida cada 30°, en trazo tenue— y por encima
+         gira la espiral principal como figura: una cinta que se afina
+         hasta enroscarse en el centro y crece hacia fuera, más grande
+         que la placa, así que su punta se sale por los lados como en
+         la foto. El número de la hora en curso y su marquita se
+         encienden en rosa. */
+      .spiral-arm { fill: var(--p-spiral); stroke: none; }
+      .spiral-out { fill: #e7e9ee; stroke: none; }
+      .ghost { fill: none; stroke: var(--p-spiral); stroke-width: 1; opacity: var(--p-ghostop, 0.2); }
+      .cast { filter: drop-shadow(0 10px 14px rgba(8, 10, 14, 0.35)); }
       /* Centro sutil: sin círculo ni aro, solo las marcas y los
          números de los minutos, tenues, y una manecilla fina. */
       .dial-face { display: none; }
@@ -606,11 +612,11 @@
         var practiceTime = null;     // {h: 1-12, mUnits: 0-11}
         var lastShown = null;        // último tiempo dibujado {h, mUnits}
 
-        // La placa sigue el diseño de la foto de referencia: en vez de
-        // la espiral gruesa, lleva una línea delgada por hora, que
-        // nace junto al centro, se curva siempre hacia el mismo lado
-        // y termina junto a su número. La línea de la hora en curso
-        // se enciende en rosa, igual que su número y su marquita.
+        // La placa sigue el diseño de la imagen de referencia: las 12
+        // espirales finas grabadas sobre toda la placa y la espiral
+        // principal como figura —una cinta que gira una vuelta cada
+        // 12 horas y cruza el número de la hora en curso—, que se
+        // enciende en rosa igual que su marquita.
         // La geometría de los números sigue siendo la de la espiral
         // logarítmica: cada número está en el ángulo PHI[h], a la
         // distancia a la que la espiral lo cruzaría a su hora.
@@ -642,7 +648,7 @@
           return { x: p.x, y: p.y, rho: rho, phi: PHI[h], theta: theta };
         }
 
-        var plateNumEls = {}, plateTickEls = {}, hourLineEls = {};
+        var plateNumEls = {}, plateTickEls = {};
         var spiralEl = document.getElementById("spiralArm");
         var spiralEl2 = document.getElementById("spiralArm2");
 
@@ -744,32 +750,21 @@
           var d = "M" + Lf.join("L") + "L" + Rt.reverse().join("L") + "Z";
           document.getElementById("spiralPath").setAttribute("d", d);
           document.getElementById("spiralPathOut").setAttribute("d", d);
-          // Las líneas de las horas, delgadas como en la foto: una por
-          // número. Cada una nace junto al centro (radio 40), se curva
-          // siempre hacia el mismo lado —con un codo cerca del centro
-          // y un abombamiento perpendicular a mitad de camino— y
-          // termina en el punto de su marquita (hourPos). La de la
-          // hora en curso se enciende en rosa (clase .on).
+          // Las 12 espirales de las horas, grabadas, como en la imagen
+          // de referencia: la misma curva logarítmica de la espiral
+          // principal (thMin..thMax), repetida cada 30° sobre toda la
+          // placa, en trazo fino y tenue. Son las líneas que cruzan la
+          // placa en la foto; ya no hay líneas sueltas por hora.
           var gh = document.getElementById("ghosts");
-          for (var hh = 1; hh <= 12; hh++) {
-            var posH = hourPos(hh);
-            var bend = hh >= 7 ? 46 : -46;
-            var bowMax = Math.min(22, (posH.rho - 40) * 0.35);
-            var ld = "";
-            for (var s2 = 0; s2 <= 42; s2++) {
-              var tt2 = s2 / 42;
-              var rr = 40 + (posH.rho - 40) * tt2;
-              var ang = posH.phi + bend * Math.pow(1 - tt2, 5);
-              var ar = ang * Math.PI / 180;
-              var bow = bowMax * Math.sin(Math.PI * tt2);
-              var lx = CENTER.x + Math.cos(ar) * rr + Math.sin(ar) * bow;
-              var ly = CENTER.y + Math.sin(ar) * rr - Math.cos(ar) * bow;
-              ld += (s2 === 0 ? "M" : "L") + lx.toFixed(1) + " " + ly.toFixed(1);
+          for (var kk = 0; kk < 12; kk++) {
+            var gd = "";
+            for (var m = 0; m <= 160; m++) {
+              var thg = thMin + (thMax - thMin) * m / 160, pg = polar(spiralR(thg), thg + kk * 30);
+              gd += (m === 0 ? "M" : "L") + pg.x.toFixed(1) + " " + pg.y.toFixed(1);
             }
-            var lp = document.createElementNS(NS, "path");
-            lp.setAttribute("d", ld); lp.setAttribute("class", "hour-line");
-            gh.appendChild(lp);
-            hourLineEls[hh] = lp;
+            var gp = document.createElementNS(NS, "path");
+            gp.setAttribute("d", gd); gp.setAttribute("class", "ghost");
+            gh.appendChild(gp);
           }
         })();
 
@@ -786,15 +781,13 @@
           spiralEl2.setAttribute("transform", tr);
         }
 
-        // La hora en curso: su número y su marquita se tiñen de rojo,
-        // como en el diseño original, para ver de un vistazo qué número
-        // está cruzando la espiral.
+        // La hora en curso: su número y su marquita se tiñen de rosa,
+        // para ver de un vistazo qué número está cruzando la espiral.
         function setHourHighlight(h) {
           for (var k = 1; k <= 12; k++) {
             if (!plateNumEls[k]) continue;
             plateNumEls[k].classList.toggle("on", k === h);
             plateTickEls[k].classList.toggle("on", k === h);
-            if (hourLineEls[k]) hourLineEls[k].classList.toggle("on", k === h);
           }
         }
 
@@ -1067,7 +1060,7 @@
           setHourHighlight(h12);
           plateEl.setAttribute(
             "aria-label",
-            "Reloj de placa: la línea marca el " + h12 + " y la manecilla marca " + (mUnits * 5) + " minutos"
+            "Reloj de placa: la espiral cruza el " + h12 + " y la manecilla marca " + (mUnits * 5) + " minutos"
           );
           return { hUsed: hUsed, mUsed: mUsed };
         }
@@ -1194,7 +1187,7 @@
           btnViewSq.setAttribute("aria-pressed", hands ? "false" : "true");
           btnViewHands.setAttribute("aria-pressed", hands ? "true" : "false");
           readHintEl.textContent = hands
-            ? "La línea de la hora en curso se enciende en rosa, igual que su número. La manecilla del centro marca los minutos."
+            ? "La espiral cruza el número de la hora en curso, que se enciende en rosa igual que su marquita. La manecilla del centro marca los minutos."
             : "Suma los rojos y azules para la hora; los verdes y azules, por 5, dan los minutos.";
           if (mode === "live") tick();
           else if (lastShown) render(lastShown.h, lastShown.mUnits);
@@ -1228,8 +1221,8 @@
       // permite, se registra con el ámbito por defecto del archivo.
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", function () {
-          navigator.serviceWorker.register("data:application/javascript;base64,LyogUmVsb2ogZGUgRmlib25hY2NpIOKAlCBzZXJ2aWNlIHdvcmtlcjogZ3VhcmRhIGxhIHDDoWdpbmEsIHN1cyBpY29ub3MgeQogICBsYSBmb3RvIGRlIGxhIEx1bmEgcGFyYSBxdWUgZWwgcmVsb2ogYWJyYSBzaW4gY29uZXhpw7NuIHRyYXMgbGEKICAgcHJpbWVyYSB2aXNpdGEsIHlhIGluc3RhbGFkbyBvIGVuIGVsIG5hdmVnYWRvci4gKi8KdmFyIENBQ0hFID0gInJlbG9qLWZpYm9uYWNjaS12MyI7CnZhciBJTkRFWCA9ICIuLi9pbmRleC5odG1sIjsKdmFyIFBSRUNBQ0hFID0gWwogICIuLi9pbmRleC5odG1sIiwKICAiLi9tYW5pZmVzdC53ZWJtYW5pZmVzdCIsCiAgIi4vYnJvd3NlcmNvbmZpZy54bWwiLAogICIuL21vb24tc3VyZmFjZS5wbmciLAogICIuL2ljb24tMTQ0LnBuZyIsCiAgIi4vaWNvbi0xOTIucG5nIiwKICAiLi9pY29uLTI1Ni5wbmciLAogICIuL2ljb24tMzg0LnBuZyIsCiAgIi4vaWNvbi01MTIucG5nIiwKICAiLi9pY29uLW1hc2thYmxlLTUxMi5wbmciLAogICIuL2FwcGxlLXRvdWNoLWljb24ucG5nIiwKICAiLi9hcHBsZS10b3VjaC1pY29uLTEyMC5wbmciLAogICIuL2FwcGxlLXRvdWNoLWljb24tMTUyLnBuZyIsCiAgIi4vYXBwbGUtdG91Y2gtaWNvbi0xNjcucG5nIiwKICAiLi9mYXZpY29uLTE2LnBuZyIsCiAgIi4vZmF2aWNvbi0zMi5wbmciLAogICIuL2Zhdmljb24tNDgucG5nIiwKICAiLi9mYXZpY29uLmljbyIsCiAgIi4vbXN0aWxlLTE1MC5wbmciCl07CgpzZWxmLmFkZEV2ZW50TGlzdGVuZXIoImluc3RhbGwiLCBmdW5jdGlvbiAoZXZlbnQpIHsKICBldmVudC53YWl0VW50aWwoCiAgICBjYWNoZXMub3BlbihDQUNIRSkudGhlbihmdW5jdGlvbiAoY2FjaGUpIHsKICAgICAgcmV0dXJuIGNhY2hlLmFkZEFsbChQUkVDQUNIRSk7CiAgICB9KS50aGVuKGZ1bmN0aW9uICgpIHsgcmV0dXJuIHNlbGYuc2tpcFdhaXRpbmcoKTsgfSkKICApOwp9KTsKCnNlbGYuYWRkRXZlbnRMaXN0ZW5lcigiYWN0aXZhdGUiLCBmdW5jdGlvbiAoZXZlbnQpIHsKICBldmVudC53YWl0VW50aWwoCiAgICBjYWNoZXMua2V5cygpLnRoZW4oZnVuY3Rpb24gKGtleXMpIHsKICAgICAgcmV0dXJuIFByb21pc2UuYWxsKGtleXMubWFwKGZ1bmN0aW9uIChrKSB7CiAgICAgICAgcmV0dXJuIGsgPT09IENBQ0hFID8gbnVsbCA6IGNhY2hlcy5kZWxldGUoayk7CiAgICAgIH0pKTsKICAgIH0pLnRoZW4oZnVuY3Rpb24gKCkgeyByZXR1cm4gc2VsZi5jbGllbnRzLmNsYWltKCk7IH0pCiAgKTsKfSk7CgpzZWxmLmFkZEV2ZW50TGlzdGVuZXIoImZldGNoIiwgZnVuY3Rpb24gKGV2ZW50KSB7CiAgaWYgKGV2ZW50LnJlcXVlc3QubWV0aG9kICE9PSAiR0VUIikgcmV0dXJuOwogIGV2ZW50LnJlc3BvbmRXaXRoKAogICAgY2FjaGVzLm1hdGNoKGV2ZW50LnJlcXVlc3QsIHsgaWdub3JlU2VhcmNoOiB0cnVlIH0pLnRoZW4oZnVuY3Rpb24gKGhpdCkgewogICAgICBpZiAoaGl0KSByZXR1cm4gaGl0OwogICAgICByZXR1cm4gZmV0Y2goZXZlbnQucmVxdWVzdCkudGhlbihmdW5jdGlvbiAocmVzKSB7CiAgICAgICAgaWYgKHJlcyAmJiByZXMub2sgJiYgbmV3IFVSTChldmVudC5yZXF1ZXN0LnVybCkub3JpZ2luID09PSBzZWxmLmxvY2F0aW9uLm9yaWdpbikgewogICAgICAgICAgdmFyIGNvcHkgPSByZXMuY2xvbmUoKTsKICAgICAgICAgIGNhY2hlcy5vcGVuKENBQ0hFKS50aGVuKGZ1bmN0aW9uIChjYWNoZSkgeyBjYWNoZS5wdXQoZXZlbnQucmVxdWVzdCwgY29weSk7IH0pOwogICAgICAgIH0KICAgICAgICByZXR1cm4gcmVzOwogICAgICB9KS5jYXRjaChmdW5jdGlvbiAoKSB7CiAgICAgICAgLy8gU2luIGNvbmV4acOzbiB5IHNpbiBjb3BpYSBkZWwgcmVjdXJzbzogc2kgZXJhIHVuYSBuYXZlZ2FjacOzbiwKICAgICAgICAvLyBzZSBzaXJ2ZSBsYSBww6FnaW5hIGd1YXJkYWRhIHBhcmEgcXVlIGVsIHJlbG9qIHNpZ2EgYWJyaWVuZG8uCiAgICAgICAgaWYgKGV2ZW50LnJlcXVlc3QubW9kZSA9PT0gIm5hdmlnYXRlIikgewogICAgICAgICAgcmV0dXJuIGNhY2hlcy5tYXRjaChJTkRFWCwgeyBpZ25vcmVTZWFyY2g6IHRydWUgfSk7CiAgICAgICAgfQogICAgICAgIHJldHVybiBSZXNwb25zZS5lcnJvcigpOwogICAgICB9KTsKICAgIH0pCiAgKTsKfSk7Cg==", { scope: "./" })
-            .catch(function () { return navigator.serviceWorker.register("data:application/javascript;base64,LyogUmVsb2ogZGUgRmlib25hY2NpIOKAlCBzZXJ2aWNlIHdvcmtlcjogZ3VhcmRhIGxhIHDDoWdpbmEsIHN1cyBpY29ub3MgeQogICBsYSBmb3RvIGRlIGxhIEx1bmEgcGFyYSBxdWUgZWwgcmVsb2ogYWJyYSBzaW4gY29uZXhpw7NuIHRyYXMgbGEKICAgcHJpbWVyYSB2aXNpdGEsIHlhIGluc3RhbGFkbyBvIGVuIGVsIG5hdmVnYWRvci4gKi8KdmFyIENBQ0hFID0gInJlbG9qLWZpYm9uYWNjaS12MyI7CnZhciBJTkRFWCA9ICIuLi9pbmRleC5odG1sIjsKdmFyIFBSRUNBQ0hFID0gWwogICIuLi9pbmRleC5odG1sIiwKICAiLi9tYW5pZmVzdC53ZWJtYW5pZmVzdCIsCiAgIi4vYnJvd3NlcmNvbmZpZy54bWwiLAogICIuL21vb24tc3VyZmFjZS5wbmciLAogICIuL2ljb24tMTQ0LnBuZyIsCiAgIi4vaWNvbi0xOTIucG5nIiwKICAiLi9pY29uLTI1Ni5wbmciLAogICIuL2ljb24tMzg0LnBuZyIsCiAgIi4vaWNvbi01MTIucG5nIiwKICAiLi9pY29uLW1hc2thYmxlLTUxMi5wbmciLAogICIuL2FwcGxlLXRvdWNoLWljb24ucG5nIiwKICAiLi9hcHBsZS10b3VjaC1pY29uLTEyMC5wbmciLAogICIuL2FwcGxlLXRvdWNoLWljb24tMTUyLnBuZyIsCiAgIi4vYXBwbGUtdG91Y2gtaWNvbi0xNjcucG5nIiwKICAiLi9mYXZpY29uLTE2LnBuZyIsCiAgIi4vZmF2aWNvbi0zMi5wbmciLAogICIuL2Zhdmljb24tNDgucG5nIiwKICAiLi9mYXZpY29uLmljbyIsCiAgIi4vbXN0aWxlLTE1MC5wbmciCl07CgpzZWxmLmFkZEV2ZW50TGlzdGVuZXIoImluc3RhbGwiLCBmdW5jdGlvbiAoZXZlbnQpIHsKICBldmVudC53YWl0VW50aWwoCiAgICBjYWNoZXMub3BlbihDQUNIRSkudGhlbihmdW5jdGlvbiAoY2FjaGUpIHsKICAgICAgcmV0dXJuIGNhY2hlLmFkZEFsbChQUkVDQUNIRSk7CiAgICB9KS50aGVuKGZ1bmN0aW9uICgpIHsgcmV0dXJuIHNlbGYuc2tpcFdhaXRpbmcoKTsgfSkKICApOwp9KTsKCnNlbGYuYWRkRXZlbnRMaXN0ZW5lcigiYWN0aXZhdGUiLCBmdW5jdGlvbiAoZXZlbnQpIHsKICBldmVudC53YWl0VW50aWwoCiAgICBjYWNoZXMua2V5cygpLnRoZW4oZnVuY3Rpb24gKGtleXMpIHsKICAgICAgcmV0dXJuIFByb21pc2UuYWxsKGtleXMubWFwKGZ1bmN0aW9uIChrKSB7CiAgICAgICAgcmV0dXJuIGsgPT09IENBQ0hFID8gbnVsbCA6IGNhY2hlcy5kZWxldGUoayk7CiAgICAgIH0pKTsKICAgIH0pLnRoZW4oZnVuY3Rpb24gKCkgeyByZXR1cm4gc2VsZi5jbGllbnRzLmNsYWltKCk7IH0pCiAgKTsKfSk7CgpzZWxmLmFkZEV2ZW50TGlzdGVuZXIoImZldGNoIiwgZnVuY3Rpb24gKGV2ZW50KSB7CiAgaWYgKGV2ZW50LnJlcXVlc3QubWV0aG9kICE9PSAiR0VUIikgcmV0dXJuOwogIGV2ZW50LnJlc3BvbmRXaXRoKAogICAgY2FjaGVzLm1hdGNoKGV2ZW50LnJlcXVlc3QsIHsgaWdub3JlU2VhcmNoOiB0cnVlIH0pLnRoZW4oZnVuY3Rpb24gKGhpdCkgewogICAgICBpZiAoaGl0KSByZXR1cm4gaGl0OwogICAgICByZXR1cm4gZmV0Y2goZXZlbnQucmVxdWVzdCkudGhlbihmdW5jdGlvbiAocmVzKSB7CiAgICAgICAgaWYgKHJlcyAmJiByZXMub2sgJiYgbmV3IFVSTChldmVudC5yZXF1ZXN0LnVybCkub3JpZ2luID09PSBzZWxmLmxvY2F0aW9uLm9yaWdpbikgewogICAgICAgICAgdmFyIGNvcHkgPSByZXMuY2xvbmUoKTsKICAgICAgICAgIGNhY2hlcy5vcGVuKENBQ0hFKS50aGVuKGZ1bmN0aW9uIChjYWNoZSkgeyBjYWNoZS5wdXQoZXZlbnQucmVxdWVzdCwgY29weSk7IH0pOwogICAgICAgIH0KICAgICAgICByZXR1cm4gcmVzOwogICAgICB9KS5jYXRjaChmdW5jdGlvbiAoKSB7CiAgICAgICAgLy8gU2luIGNvbmV4acOzbiB5IHNpbiBjb3BpYSBkZWwgcmVjdXJzbzogc2kgZXJhIHVuYSBuYXZlZ2FjacOzbiwKICAgICAgICAvLyBzZSBzaXJ2ZSBsYSBww6FnaW5hIGd1YXJkYWRhIHBhcmEgcXVlIGVsIHJlbG9qIHNpZ2EgYWJyaWVuZG8uCiAgICAgICAgaWYgKGV2ZW50LnJlcXVlc3QubW9kZSA9PT0gIm5hdmlnYXRlIikgewogICAgICAgICAgcmV0dXJuIGNhY2hlcy5tYXRjaChJTkRFWCwgeyBpZ25vcmVTZWFyY2g6IHRydWUgfSk7CiAgICAgICAgfQogICAgICAgIHJldHVybiBSZXNwb25zZS5lcnJvcigpOwogICAgICB9KTsKICAgIH0pCiAgKTsKfSk7Cg=="); })
+          navigator.serviceWorker.register("data:application/javascript;base64,LyogUmVsb2ogZGUgRmlib25hY2NpIOKAlCBzZXJ2aWNlIHdvcmtlcjogZ3VhcmRhIGxhIHDDoWdpbmEsIHN1cyBpY29ub3MgeQogICBsYSBmb3RvIGRlIGxhIEx1bmEgcGFyYSBxdWUgZWwgcmVsb2ogYWJyYSBzaW4gY29uZXhpw7NuIHRyYXMgbGEKICAgcHJpbWVyYSB2aXNpdGEsIHlhIGluc3RhbGFkbyBvIGVuIGVsIG5hdmVnYWRvci4gKi8KdmFyIENBQ0hFID0gInJlbG9qLWZpYm9uYWNjaS12NCI7CnZhciBJTkRFWCA9ICIuLi9pbmRleC5odG1sIjsKdmFyIFBSRUNBQ0hFID0gWwogICIuLi9pbmRleC5odG1sIiwKICAiLi9tYW5pZmVzdC53ZWJtYW5pZmVzdCIsCiAgIi4vYnJvd3NlcmNvbmZpZy54bWwiLAogICIuL21vb24tc3VyZmFjZS5wbmciLAogICIuL2ljb24tMTQ0LnBuZyIsCiAgIi4vaWNvbi0xOTIucG5nIiwKICAiLi9pY29uLTI1Ni5wbmciLAogICIuL2ljb24tMzg0LnBuZyIsCiAgIi4vaWNvbi01MTIucG5nIiwKICAiLi9pY29uLW1hc2thYmxlLTUxMi5wbmciLAogICIuL2FwcGxlLXRvdWNoLWljb24ucG5nIiwKICAiLi9hcHBsZS10b3VjaC1pY29uLTEyMC5wbmciLAogICIuL2FwcGxlLXRvdWNoLWljb24tMTUyLnBuZyIsCiAgIi4vYXBwbGUtdG91Y2gtaWNvbi0xNjcucG5nIiwKICAiLi9mYXZpY29uLTE2LnBuZyIsCiAgIi4vZmF2aWNvbi0zMi5wbmciLAogICIuL2Zhdmljb24tNDgucG5nIiwKICAiLi9mYXZpY29uLmljbyIsCiAgIi4vbXN0aWxlLTE1MC5wbmciCl07CgpzZWxmLmFkZEV2ZW50TGlzdGVuZXIoImluc3RhbGwiLCBmdW5jdGlvbiAoZXZlbnQpIHsKICBldmVudC53YWl0VW50aWwoCiAgICBjYWNoZXMub3BlbihDQUNIRSkudGhlbihmdW5jdGlvbiAoY2FjaGUpIHsKICAgICAgcmV0dXJuIGNhY2hlLmFkZEFsbChQUkVDQUNIRSk7CiAgICB9KS50aGVuKGZ1bmN0aW9uICgpIHsgcmV0dXJuIHNlbGYuc2tpcFdhaXRpbmcoKTsgfSkKICApOwp9KTsKCnNlbGYuYWRkRXZlbnRMaXN0ZW5lcigiYWN0aXZhdGUiLCBmdW5jdGlvbiAoZXZlbnQpIHsKICBldmVudC53YWl0VW50aWwoCiAgICBjYWNoZXMua2V5cygpLnRoZW4oZnVuY3Rpb24gKGtleXMpIHsKICAgICAgcmV0dXJuIFByb21pc2UuYWxsKGtleXMubWFwKGZ1bmN0aW9uIChrKSB7CiAgICAgICAgcmV0dXJuIGsgPT09IENBQ0hFID8gbnVsbCA6IGNhY2hlcy5kZWxldGUoayk7CiAgICAgIH0pKTsKICAgIH0pLnRoZW4oZnVuY3Rpb24gKCkgeyByZXR1cm4gc2VsZi5jbGllbnRzLmNsYWltKCk7IH0pCiAgKTsKfSk7CgpzZWxmLmFkZEV2ZW50TGlzdGVuZXIoImZldGNoIiwgZnVuY3Rpb24gKGV2ZW50KSB7CiAgaWYgKGV2ZW50LnJlcXVlc3QubWV0aG9kICE9PSAiR0VUIikgcmV0dXJuOwogIGV2ZW50LnJlc3BvbmRXaXRoKAogICAgY2FjaGVzLm1hdGNoKGV2ZW50LnJlcXVlc3QsIHsgaWdub3JlU2VhcmNoOiB0cnVlIH0pLnRoZW4oZnVuY3Rpb24gKGhpdCkgewogICAgICBpZiAoaGl0KSByZXR1cm4gaGl0OwogICAgICByZXR1cm4gZmV0Y2goZXZlbnQucmVxdWVzdCkudGhlbihmdW5jdGlvbiAocmVzKSB7CiAgICAgICAgaWYgKHJlcyAmJiByZXMub2sgJiYgbmV3IFVSTChldmVudC5yZXF1ZXN0LnVybCkub3JpZ2luID09PSBzZWxmLmxvY2F0aW9uLm9yaWdpbikgewogICAgICAgICAgdmFyIGNvcHkgPSByZXMuY2xvbmUoKTsKICAgICAgICAgIGNhY2hlcy5vcGVuKENBQ0hFKS50aGVuKGZ1bmN0aW9uIChjYWNoZSkgeyBjYWNoZS5wdXQoZXZlbnQucmVxdWVzdCwgY29weSk7IH0pOwogICAgICAgIH0KICAgICAgICByZXR1cm4gcmVzOwogICAgICB9KS5jYXRjaChmdW5jdGlvbiAoKSB7CiAgICAgICAgLy8gU2luIGNvbmV4acOzbiB5IHNpbiBjb3BpYSBkZWwgcmVjdXJzbzogc2kgZXJhIHVuYSBuYXZlZ2FjacOzbiwKICAgICAgICAvLyBzZSBzaXJ2ZSBsYSBww6FnaW5hIGd1YXJkYWRhIHBhcmEgcXVlIGVsIHJlbG9qIHNpZ2EgYWJyaWVuZG8uCiAgICAgICAgaWYgKGV2ZW50LnJlcXVlc3QubW9kZSA9PT0gIm5hdmlnYXRlIikgewogICAgICAgICAgcmV0dXJuIGNhY2hlcy5tYXRjaChJTkRFWCwgeyBpZ25vcmVTZWFyY2g6IHRydWUgfSk7CiAgICAgICAgfQogICAgICAgIHJldHVybiBSZXNwb25zZS5lcnJvcigpOwogICAgICB9KTsKICAgIH0pCiAgKTsKfSk7Cg==", { scope: "./" })
+            .catch(function () { return navigator.serviceWorker.register("data:application/javascript;base64,LyogUmVsb2ogZGUgRmlib25hY2NpIOKAlCBzZXJ2aWNlIHdvcmtlcjogZ3VhcmRhIGxhIHDDoWdpbmEsIHN1cyBpY29ub3MgeQogICBsYSBmb3RvIGRlIGxhIEx1bmEgcGFyYSBxdWUgZWwgcmVsb2ogYWJyYSBzaW4gY29uZXhpw7NuIHRyYXMgbGEKICAgcHJpbWVyYSB2aXNpdGEsIHlhIGluc3RhbGFkbyBvIGVuIGVsIG5hdmVnYWRvci4gKi8KdmFyIENBQ0hFID0gInJlbG9qLWZpYm9uYWNjaS12NCI7CnZhciBJTkRFWCA9ICIuLi9pbmRleC5odG1sIjsKdmFyIFBSRUNBQ0hFID0gWwogICIuLi9pbmRleC5odG1sIiwKICAiLi9tYW5pZmVzdC53ZWJtYW5pZmVzdCIsCiAgIi4vYnJvd3NlcmNvbmZpZy54bWwiLAogICIuL21vb24tc3VyZmFjZS5wbmciLAogICIuL2ljb24tMTQ0LnBuZyIsCiAgIi4vaWNvbi0xOTIucG5nIiwKICAiLi9pY29uLTI1Ni5wbmciLAogICIuL2ljb24tMzg0LnBuZyIsCiAgIi4vaWNvbi01MTIucG5nIiwKICAiLi9pY29uLW1hc2thYmxlLTUxMi5wbmciLAogICIuL2FwcGxlLXRvdWNoLWljb24ucG5nIiwKICAiLi9hcHBsZS10b3VjaC1pY29uLTEyMC5wbmciLAogICIuL2FwcGxlLXRvdWNoLWljb24tMTUyLnBuZyIsCiAgIi4vYXBwbGUtdG91Y2gtaWNvbi0xNjcucG5nIiwKICAiLi9mYXZpY29uLTE2LnBuZyIsCiAgIi4vZmF2aWNvbi0zMi5wbmciLAogICIuL2Zhdmljb24tNDgucG5nIiwKICAiLi9mYXZpY29uLmljbyIsCiAgIi4vbXN0aWxlLTE1MC5wbmciCl07CgpzZWxmLmFkZEV2ZW50TGlzdGVuZXIoImluc3RhbGwiLCBmdW5jdGlvbiAoZXZlbnQpIHsKICBldmVudC53YWl0VW50aWwoCiAgICBjYWNoZXMub3BlbihDQUNIRSkudGhlbihmdW5jdGlvbiAoY2FjaGUpIHsKICAgICAgcmV0dXJuIGNhY2hlLmFkZEFsbChQUkVDQUNIRSk7CiAgICB9KS50aGVuKGZ1bmN0aW9uICgpIHsgcmV0dXJuIHNlbGYuc2tpcFdhaXRpbmcoKTsgfSkKICApOwp9KTsKCnNlbGYuYWRkRXZlbnRMaXN0ZW5lcigiYWN0aXZhdGUiLCBmdW5jdGlvbiAoZXZlbnQpIHsKICBldmVudC53YWl0VW50aWwoCiAgICBjYWNoZXMua2V5cygpLnRoZW4oZnVuY3Rpb24gKGtleXMpIHsKICAgICAgcmV0dXJuIFByb21pc2UuYWxsKGtleXMubWFwKGZ1bmN0aW9uIChrKSB7CiAgICAgICAgcmV0dXJuIGsgPT09IENBQ0hFID8gbnVsbCA6IGNhY2hlcy5kZWxldGUoayk7CiAgICAgIH0pKTsKICAgIH0pLnRoZW4oZnVuY3Rpb24gKCkgeyByZXR1cm4gc2VsZi5jbGllbnRzLmNsYWltKCk7IH0pCiAgKTsKfSk7CgpzZWxmLmFkZEV2ZW50TGlzdGVuZXIoImZldGNoIiwgZnVuY3Rpb24gKGV2ZW50KSB7CiAgaWYgKGV2ZW50LnJlcXVlc3QubWV0aG9kICE9PSAiR0VUIikgcmV0dXJuOwogIGV2ZW50LnJlc3BvbmRXaXRoKAogICAgY2FjaGVzLm1hdGNoKGV2ZW50LnJlcXVlc3QsIHsgaWdub3JlU2VhcmNoOiB0cnVlIH0pLnRoZW4oZnVuY3Rpb24gKGhpdCkgewogICAgICBpZiAoaGl0KSByZXR1cm4gaGl0OwogICAgICByZXR1cm4gZmV0Y2goZXZlbnQucmVxdWVzdCkudGhlbihmdW5jdGlvbiAocmVzKSB7CiAgICAgICAgaWYgKHJlcyAmJiByZXMub2sgJiYgbmV3IFVSTChldmVudC5yZXF1ZXN0LnVybCkub3JpZ2luID09PSBzZWxmLmxvY2F0aW9uLm9yaWdpbikgewogICAgICAgICAgdmFyIGNvcHkgPSByZXMuY2xvbmUoKTsKICAgICAgICAgIGNhY2hlcy5vcGVuKENBQ0hFKS50aGVuKGZ1bmN0aW9uIChjYWNoZSkgeyBjYWNoZS5wdXQoZXZlbnQucmVxdWVzdCwgY29weSk7IH0pOwogICAgICAgIH0KICAgICAgICByZXR1cm4gcmVzOwogICAgICB9KS5jYXRjaChmdW5jdGlvbiAoKSB7CiAgICAgICAgLy8gU2luIGNvbmV4acOzbiB5IHNpbiBjb3BpYSBkZWwgcmVjdXJzbzogc2kgZXJhIHVuYSBuYXZlZ2FjacOzbiwKICAgICAgICAvLyBzZSBzaXJ2ZSBsYSBww6FnaW5hIGd1YXJkYWRhIHBhcmEgcXVlIGVsIHJlbG9qIHNpZ2EgYWJyaWVuZG8uCiAgICAgICAgaWYgKGV2ZW50LnJlcXVlc3QubW9kZSA9PT0gIm5hdmlnYXRlIikgewogICAgICAgICAgcmV0dXJuIGNhY2hlcy5tYXRjaChJTkRFWCwgeyBpZ25vcmVTZWFyY2g6IHRydWUgfSk7CiAgICAgICAgfQogICAgICAgIHJldHVybiBSZXNwb25zZS5lcnJvcigpOwogICAgICB9KTsKICAgIH0pCiAgKTsKfSk7Cg=="); })
             .catch(function () {});
         });
       }
