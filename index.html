@@ -140,10 +140,82 @@
 
       /* ---------- Vista de manecillas: placa plateada y espiral ---------- */
       [hidden] { display: none !important; }
-      .hands-wrap { display: flex; justify-content: center; }
-      .plate { width: min(100%, 23rem); height: auto; display: block; }
-      .plate-body { stroke: rgba(20, 20, 25, 0.28); stroke-width: 1.5; }
-      .spiral-arm { fill: none; stroke: #16161a; stroke-width: 7; stroke-linecap: round; }
+      /* Fondo tipo pared oscura en ambos modos, como las paredes de las
+         fotos: la placa plateada se despega bien del fondo, y la espiral
+         negra —más grande que la placa— se sigue leyendo cuando se sale
+         por los lados porque el fondo es gris medio, nunca negro. */
+      .hands-wrap {
+        position: relative;
+        display: flex;
+        justify-content: center;
+        background: linear-gradient(165deg, #596069 0%, #3b4149 55%, #2a2f36 100%);
+        border-radius: 14px;
+        padding: clamp(0.4rem, 2vw, 0.9rem) 0.25rem;
+        overflow: visible;
+      }
+      .plate { width: min(100%, 23rem); height: auto; display: block; overflow: visible; }
+      .plate-body {
+        stroke: rgba(12, 12, 16, 0.55);
+        stroke-width: 2;
+        filter: drop-shadow(0 16px 20px rgba(8, 10, 14, 0.55));
+      }
+      .spiral-arm { fill: none; stroke: #101014; stroke-width: 7.5; stroke-linecap: round; }
+      .dial-face { fill: rgba(255, 255, 255, 0.38); }
+      .dial-ring { fill: none; stroke: #101014; stroke-width: 2.6; }
+      .dial-tick { stroke: #101014; stroke-linecap: round; }
+      /* ---------- Cielo vivo de la placa ---------- */
+      .aurora {
+        position: absolute;
+        inset: 0;
+        height: 55%;
+        overflow: hidden;
+        border-radius: 14px 14px 0 0;
+        opacity: 0;
+        transition: opacity 1.4s ease;
+        pointer-events: none;
+      }
+      .aur-band {
+        position: absolute;
+        left: -15%;
+        width: 130%;
+        height: 62%;
+        top: -20%;
+        background: linear-gradient(100deg, rgba(84, 255, 158, 0) 5%, rgba(84, 255, 158, 0.5) 32%, rgba(120, 220, 255, 0.26) 55%, rgba(168, 110, 255, 0.36) 78%, rgba(168, 110, 255, 0) 96%);
+        filter: blur(16px);
+        transform: rotate(-7deg);
+        animation: aurSway 11s ease-in-out infinite alternate;
+      }
+      .aur-b {
+        top: 8%;
+        height: 46%;
+        opacity: 0.7;
+        transform: rotate(-4deg);
+        animation-duration: 16s;
+        animation-delay: -6s;
+      }
+      @keyframes aurSway {
+        from { transform: rotate(-7deg) translateX(-2.5%); }
+        to { transform: rotate(-4.5deg) translateX(2.5%); }
+      }
+      .plate { position: relative; z-index: 1; }
+      .ecliptic-line { fill: none; stroke: rgba(22, 22, 28, 0.16); stroke-width: 1.4; stroke-dasharray: 1.5 5; stroke-linecap: round; }
+      .sky-label { font-family: "Archivo", system-ui, sans-serif; font-weight: 600; fill: #26262b; text-anchor: middle; }
+      .moon-shadow { fill: #41464f; }
+      .moon-lit { fill: #f7f1dc; }
+      .moon-rim { fill: none; stroke: rgba(18, 18, 24, 0.4); stroke-width: 1.2; }
+      .moon-pct { font-family: "IBM Plex Mono", ui-monospace, monospace; fill: #26262b; text-anchor: middle; }
+      .skyline { margin-top: 1rem; color: var(--ink-soft); font-size: 0.93rem; line-height: 1.55; }
+      .skyline b { color: var(--ink); }
+      @media (prefers-reduced-motion: reduce) {
+        .aur-band { animation: none; }
+      }
+      .dial-num {
+        font-family: "Archivo", system-ui, sans-serif;
+        font-weight: 700;
+        fill: #101014;
+        text-anchor: middle;
+        dominant-baseline: central;
+      }
       .plate-nums { transition: opacity 0.3s ease; }
       .hide-nums .plate-nums { opacity: 0; }
       .plate-num {
@@ -332,7 +404,8 @@
           <div class="tick-track" aria-hidden="true"><div class="tick-fill" id="tickFill"></div></div>
         </div>
         <div class="hands-wrap" id="handsView" hidden>
-          <svg class="plate" id="plateSvg" viewBox="0 0 640 720" role="img" aria-label="Reloj de placa plateada con espiral de Fibonacci">
+          <div class="aurora" id="aurora" aria-hidden="true"><div class="aur-band aur-a"></div><div class="aur-band aur-b"></div></div>
+          <svg class="plate" id="plateSvg" viewBox="-28 -28 696 776" role="img" aria-label="Reloj de placa plateada con espiral de Fibonacci">
             <defs>
               <linearGradient id="plateGrad" x1="0" y1="0" x2="1" y2="1">
                 <stop offset="0" stop-color="#f4f4f6"></stop>
@@ -340,11 +413,14 @@
                 <stop offset="0.75" stop-color="#e6e6ea"></stop>
                 <stop offset="1" stop-color="#b9b9c1"></stop>
               </linearGradient>
+              <clipPath id="plateClip"><rect x="220" y="30" width="200" height="660" rx="10"></rect></clipPath>
             </defs>
             <rect class="plate-body" x="220" y="30" width="200" height="660" rx="10" fill="url(#plateGrad)"></rect>
+            <g id="skyLayer" clip-path="url(#plateClip)"></g>
             <g id="plateNums" class="plate-nums"></g>
+            <g id="minuteDial"></g>
             <g id="spiralArm"><path class="spiral-arm" id="spiralPath" d=""></path></g>
-            <g id="handMinute"><polygon class="hand-min" points="320,278 325,366 320,380 315,366"></polygon></g>
+            <g id="handMinute"><polygon class="hand-min" points="320,320 324.5,354 320,374 315.5,354"></polygon></g>
             <circle class="hub" cx="320" cy="360" r="17"></circle>
             <circle class="hub-dot" cx="320" cy="360" r="6"></circle>
           </svg>
@@ -359,6 +435,11 @@
       <div class="breakdown" id="breakdown">
         <div class="chip"><span class="dot dot-h"></span><span class="dot dot-b" style="margin-left:-0.35em"></span>Horas: <b id="hoursSum">–</b></div>
         <div class="chip"><span class="dot dot-m"></span><span class="dot dot-b" style="margin-left:-0.35em"></span>Minutos: <b id="minutesSum">–</b></div>
+      </div>
+
+      <div class="skyline" id="skyLine">
+        <div id="skyMoon"></div>
+        <div id="skyPlanets"></div>
       </div>
 
       <div class="controls">
@@ -390,21 +471,45 @@
         </ol>
         <h3>Vista de manecillas: la placa y la espiral</h3>
         <p>
-          Con el botón <strong>«Manecillas»</strong> el reloj se ve como el de la foto: una
-          <strong>placa plateada vertical</strong> con los números del <strong>1 al 6 arriba</strong>
-          y del <strong>7 al 12 abajo</strong>, sobre el eje central, cada uno más lejos del centro
-          que el anterior y con su marquita a los lados. No hay carátula redonda: la que marca las
-          horas es la <strong>espiral negra de Fibonacci</strong>, que gira muy despacio —una vuelta
-          completa cada 12 horas—.
+          Con el botón <strong>«Manecillas»</strong> el reloj se ve como los de las fotos: una
+          <strong>placa plateada vertical</strong> que se despega de la pared oscura, con los números
+          <strong>en las esquinas</strong>, no sobre el eje: del <strong>7 al 12</strong> en el arco de
+          la <strong>esquina superior izquierda</strong> —el 12 arriba a la izquierda y el 7 cerca del
+          centro— y del <strong>1 al 6</strong> en el arco de la <strong>esquina inferior derecha</strong>
+          —el 1 cerca del centro y el 6 abajo—. Cada número lleva su <strong>marquita curva siguiendo
+          la espiral</strong>, y crece de tamaño conforme se aleja del centro. La que marca las horas
+          es la <strong>espiral negra de Fibonacci</strong>, bien oscura sobre la placa, que gira muy
+          despacio —una vuelta completa cada 12 horas—. La espiral es <strong>más grande que la
+          placa</strong>: se sale por los lados y se ve <strong>completa</strong> sobre el fondo,
+          no queda encerrada dentro de la placa.
         </p>
         <p>
-          <strong>La hora se lee por el número que la espiral está cruzando</strong> en ese momento
-          sobre el eje vertical: si la espiral cruza el 4, son las 4; conforme pasa la hora, el cruce
-          se va deslizando hacia el número siguiente. La <strong>manecilla recta del centro</strong>
-          es la de los minutos y se lee como en cualquier reloj: apuntando arriba son en punto,
-          a la derecha y cuarto, abajo y media y a la izquierda menos cuarto. Como el original,
-          <strong>no tiene segundero</strong>. En el modo práctica la espiral y la manecilla marcan
-          la hora escondida, para que la leas de la placa.
+          <strong>La hora se lee por el número que la espiral está cruzando</strong> en ese momento:
+          si la espiral cruza el 4, son las 4; conforme pasa la hora, el cruce se va deslizando por
+          el arco hacia el número siguiente. Los minutos se leen en la <strong>carátula circular
+          pequeña del centro</strong>, alrededor del buje, con sus marcas de minutos y los números
+          <strong>15, 30, 45 y 60</strong>: la manecilla negra del centro marca sobre esa carátula,
+          como en cualquier reloj —apuntando al 60 son en punto, al 15 y cuarto, al 30 y media
+          y al 45 menos cuarto—. Como los modelos de las fotos, <strong>no tiene segundero</strong>.
+          En el modo práctica la espiral y la manecilla marcan la hora escondida, para que la leas
+          de la placa.
+        </p>
+        <h3>El cielo vivo de la placa</h3>
+        <p>
+          La placa también lleva el cielo de <strong>este momento</strong>, calculado en la página
+          con la fecha y la hora reales, y se actualiza solo. Las <strong>estrellas</strong> son un
+          catálogo de las más brillantes del cielo: cada una se coloca por su ascensión recta y su
+          declinación según la <strong>hora sidérea</strong> de tu zona horaria, así que van cruzando
+          la placa con el paso de las horas. El <strong>óvalo punteado</strong> es la eclíptica:
+          sobre él van el <strong>Sol y los cinco planetas visibles</strong> —Mercurio, Venus, Marte,
+          Júpiter y Saturno— en su <strong>longitud eclíptica real de hoy</strong>, calculada con sus
+          elementos orbitales. Arriba a la derecha, el disco de la <strong>Luna</strong> muestra su
+          <strong>fase real de hoy</strong>, con el porcentaje iluminado. Y cuando oscurece, sobre la
+          pared aparece la <strong>aurora</strong>: su intensidad sigue la altura real del Sol bajo
+          el horizonte, así que al mediodía no está, al anochecer se insinúa y hacia la medianoche
+          se ve más fuerte. Todo va en una capa tenue, grabada por debajo de los números, la espiral
+          y la carátula de minutos, para que la hora se siga leyendo igual de bien. Debajo del reloj,
+          dos líneas resumen el cielo: la fase de la Luna y en qué signo está cada planeta.
         </p>
         <div class="example" id="example"></div>
       </section>
@@ -447,65 +552,374 @@
         var practiceTime = null;     // {h: 1-12, mUnits: 0-11}
         var lastShown = null;        // último tiempo dibujado {h, mUnits}
 
-        // La placa de la foto: números 1-6 arriba y 7-12 abajo sobre el eje
-        // vertical, cada vez más lejos del centro, y la espiral que los cruza.
+        // La placa de los modelos: los números van EN LAS ESQUINAS, en dos
+        // arcos que siguen la espiral. Del 7 al 12, el arco de la esquina
+        // superior izquierda (el 12 arriba a la izquierda, el 7 cerca del
+        // centro); del 1 al 6, el arco de la esquina inferior derecha
+        // (el 1 cerca del centro, el 6 abajo). Cada número lleva una
+        // marquita curva que sigue el trazo de la espiral.
+        //
+        // Geometría: la espiral es logarítmica, ln(radio) = SP_A + SP_B·θ
+        // (θ en grados), y gira 30° por hora. El número de la hora h está
+        // fijo en el ángulo PHI[h], a la distancia que da la propia espiral
+        // para esa hora, de modo que al girar, la espiral lo cruza justo
+        // cuando es su hora (verificado: nunca cruza dos números a la vez).
         var CENTER = { x: 320, y: 360 };
-        var HOUR_DIST = [54, 74, 101, 138, 188, 256]; // distancia al centro de 1..6 (y de 7..12)
-        var GROWTH = Math.pow(HOUR_DIST[5] / HOUR_DIST[0], 1 / 5); // crecimiento de la espiral por cada 30°
+        var SP_A = 4.53154, SP_B = -0.016184; // la espiral crece ×1.625 cada 30°
+        var PHI = { 1: 24, 2: 36, 3: 52, 4: 60, 5: 72, 6: 84,
+                    7: -153, 8: -143, 9: -132, 10: -121, 11: -110, 12: -99 };
+
+        function spiralR(thetaDeg) { return Math.exp(SP_A + SP_B * thetaDeg); }
+        function polar(r, deg) {
+          var a = deg * Math.PI / 180;
+          return { x: CENTER.x + Math.cos(a) * r, y: CENTER.y + Math.sin(a) * r };
+        }
+        // Posición fija de cada número en la placa: ángulo PHI[h] y el radio
+        // que la espiral tiene al cruzarlo a su hora (h 1-6 en la primera
+        // vuelta de la cuenta, h 7-12 en la segunda).
+        function hourPos(h) {
+          var theta = PHI[h] - (h - 1) * 30 + (h > 6 ? 360 : 0);
+          var rho = spiralR(theta);
+          var p = polar(rho, PHI[h]);
+          return { x: p.x, y: p.y, rho: rho, phi: PHI[h] };
+        }
 
         (function buildPlate() {
           var NS = "http://www.w3.org/2000/svg";
           var numsG = document.getElementById("plateNums");
-          var sizes = [17, 19, 22, 25, 28, 32];
-          for (var k = 0; k < 6; k++) {
-            var items = [
-              { n: k + 1, y: CENTER.y - HOUR_DIST[k] },
-              { n: k + 7, y: CENTER.y + HOUR_DIST[k] }
-            ];
-            items.forEach(function (item) {
-              var fs = sizes[k];
-              var label = String(item.n);
-              var half = fs * 0.34 * label.length + 13;
-              [-1, 1].forEach(function (side) {
-                var tx = CENTER.x + side * half;
-                var tick = document.createElementNS(NS, "line");
-                tick.setAttribute("x1", (tx - 8).toFixed(1));
-                tick.setAttribute("y1", (item.y - 5 * side).toFixed(1));
-                tick.setAttribute("x2", (tx + 8).toFixed(1));
-                tick.setAttribute("y2", (item.y + 5 * side).toFixed(1));
-                tick.setAttribute("class", "plate-tick");
-                numsG.appendChild(tick);
-              });
-              var t = document.createElementNS(NS, "text");
-              t.setAttribute("x", CENTER.x);
-              t.setAttribute("y", item.y);
-              t.setAttribute("class", "plate-num");
-              t.setAttribute("font-size", fs);
-              t.textContent = label;
-              numsG.appendChild(t);
-            });
+          var sizes = [17, 19, 22, 25, 28, 32]; // crece al alejarse del centro
+          for (var h = 1; h <= 12; h++) {
+            var pos = hourPos(h);
+            var rank = h <= 6 ? h - 1 : h - 7;
+            // Marquita: un tramo corto de la propia espiral, desplazado
+            // hacia fuera del número, para que siga su curvatura.
+            var rt = pos.rho + 13;
+            var half = 11 / rt; // semilongitud angular (~11 unidades de arco)
+            var td = "";
+            var nSteps = 10;
+            for (var i = 0; i <= nSteps; i++) {
+              var psi = pos.phi - half * 180 / Math.PI + (2 * half * 180 / Math.PI) * i / nSteps;
+              var rr = rt * Math.exp(SP_B * (psi - pos.phi)); // el radio sigue la espiral
+              var pt = polar(rr, psi);
+              td += (i === 0 ? "M" : "L") + pt.x.toFixed(1) + " " + pt.y.toFixed(1);
+            }
+            var tick = document.createElementNS(NS, "path");
+            tick.setAttribute("d", td);
+            tick.setAttribute("class", "plate-tick");
+            tick.setAttribute("fill", "none");
+            numsG.appendChild(tick);
+            var t = document.createElementNS(NS, "text");
+            t.setAttribute("x", pos.x.toFixed(1));
+            t.setAttribute("y", pos.y.toFixed(1));
+            t.setAttribute("class", "plate-num");
+            t.setAttribute("font-size", sizes[rank]);
+            t.textContent = String(h);
+            numsG.appendChild(t);
           }
-          // Espiral logarítmica: el radio crece por GROWTH cada 30° de giro.
-          // Está calculada para que, al girar con la hora, su cruce con el eje
-          // vertical pase justo por el número de la hora en punto: arriba del
-          // 1 al 6 durante las primeras seis horas y abajo del 7 al 12 después.
+          // Carátula circular pequeña de minutos alrededor del buje, como
+          // en los modelos: aro, 60 marcas (las de 5 minutos, más largas)
+          // y los números 60, 15, 30 y 45. La manecilla marca sobre ella.
+          var dial = document.getElementById("minuteDial");
+          var face = document.createElementNS(NS, "circle");
+          face.setAttribute("cx", CENTER.x); face.setAttribute("cy", CENTER.y);
+          face.setAttribute("r", 48); face.setAttribute("class", "dial-face");
+          dial.appendChild(face);
+          var ring = document.createElementNS(NS, "circle");
+          ring.setAttribute("cx", CENTER.x); ring.setAttribute("cy", CENTER.y);
+          ring.setAttribute("r", 48); ring.setAttribute("class", "dial-ring");
+          dial.appendChild(ring);
+          for (var mnt = 0; mnt < 60; mnt++) {
+            var five = mnt % 5 === 0;
+            var p1 = polar(five ? 40.5 : 43.5, mnt * 6 - 90);
+            var p2 = polar(46.5, mnt * 6 - 90);
+            var ln = document.createElementNS(NS, "line");
+            ln.setAttribute("x1", p1.x.toFixed(1)); ln.setAttribute("y1", p1.y.toFixed(1));
+            ln.setAttribute("x2", p2.x.toFixed(1)); ln.setAttribute("y2", p2.y.toFixed(1));
+            ln.setAttribute("class", "dial-tick");
+            ln.setAttribute("stroke-width", five ? 2.6 : 1.3);
+            dial.appendChild(ln);
+          }
+          [[60, -90], [15, 0], [30, 90], [45, 180]].forEach(function (dn) {
+            var pp = polar(29.5, dn[1]);
+            var tt = document.createElementNS(NS, "text");
+            tt.setAttribute("x", pp.x.toFixed(1)); tt.setAttribute("y", pp.y.toFixed(1));
+            tt.setAttribute("class", "dial-num");
+            tt.setAttribute("font-size", 12.5);
+            tt.textContent = String(dn[0]);
+            dial.appendChild(tt);
+          });
+          // La espiral logarítmica: de la punta exterior (radio ~334, más
+          // grande que la placa: se sale por los lados) a la cola que se
+          // enrolla hasta el centro. Al girar 30° por hora cruza, uno a
+          // uno, los números de las esquinas.
           var d = "";
-          var steps = 340;
-          var bStart = 170, bEnd = -258; // grados locales: de la cola interior a la exterior
+          var thMin = -79, thMax = 180, steps = 300;
           for (var i = 0; i <= steps; i++) {
-            var beta = bStart + (bEnd - bStart) * i / steps;
-            var r = HOUR_DIST[0] * Math.pow(GROWTH, (-90 - beta) / 30);
-            var a = beta * Math.PI / 180;
-            d += (i === 0 ? "M" : "L") +
-              (CENTER.x + Math.cos(a) * r).toFixed(1) + " " +
-              (CENTER.y + Math.sin(a) * r).toFixed(1);
+            var th = thMin + (thMax - thMin) * i / steps;
+            var pt2 = polar(spiralR(th), th);
+            d += (i === 0 ? "M" : "L") + pt2.x.toFixed(1) + " " + pt2.y.toFixed(1);
           }
           document.getElementById("spiralPath").setAttribute("d", d);
         })();
 
+        /* ---------- El cielo vivo de la placa ----------
+           Todo se calcula en la página con la fecha y la hora reales:
+           estrellas de catálogo colocadas por hora sidérea local, Sol y
+           planetas por elementos orbitales keplerianos (tabla aproximada
+           del JPL), posición y fase de la Luna con el algoritmo de
+           Schlyter, y aurora según la altura real del Sol. La capa del
+           cielo va grabada sobre la placa, por debajo de los números, la
+           carátula de minutos y la espiral. */
+        var RAD = Math.PI / 180;
+        var NS = "http://www.w3.org/2000/svg";
+        var SIGNS = ["Aries", "Tauro", "Géminis", "Cáncer", "Leo", "Virgo", "Libra", "Escorpio", "Sagitario", "Capricornio", "Acuario", "Piscis"];
+        var auroraEl = document.getElementById("aurora");
+        var skyMoonEl = document.getElementById("skyMoon");
+        var skyPlanetsEl = document.getElementById("skyPlanets");
+
+        function norm360(x) { return ((x % 360) + 360) % 360; }
+        function jdOf(date) { return date.getTime() / 86400000 + 2440587.5; }
+        function zodiac(lon) { return SIGNS[Math.floor(norm360(lon) / 30) % 12]; }
+
+        // Longitud eclíptica geocéntrica del Sol (d = días desde 2000 ene 0.0)
+        function sunLon(d) {
+          var w = 282.9404 + 4.70935e-5 * d;
+          var e = 0.016709 - 1.151e-9 * d;
+          var M = norm360(356.0470 + 0.9856002585 * d);
+          var E = M + e / RAD * Math.sin(M * RAD) * (1 + e * Math.cos(M * RAD));
+          var xv = Math.cos(E * RAD) - e;
+          var yv = Math.sin(E * RAD) * Math.sqrt(1 - e * e);
+          return norm360(Math.atan2(yv, xv) / RAD + w);
+        }
+
+        // Posición geocéntrica de la Luna (Schlyter; error típico ~0.1°)
+        function moonCalc(d) {
+          var N = norm360(125.1228 - 0.0529538083 * d);
+          var w = norm360(318.0634 + 0.1643573223 * d);
+          var M = norm360(115.3654 + 13.0649929509 * d);
+          var e = 0.0549, a = 60.2666, inc = 5.1454 * RAD;
+          var E = M + e / RAD * Math.sin(M * RAD) * (1 + e * Math.cos(M * RAD));
+          for (var k = 0; k < 3; k++) {
+            E = E - (E - e / RAD * Math.sin(E * RAD) - M) / (1 - e * Math.cos(E * RAD));
+          }
+          var xv = a * (Math.cos(E * RAD) - e);
+          var yv = a * Math.sqrt(1 - e * e) * Math.sin(E * RAD);
+          var v = Math.atan2(yv, xv) / RAD, r = Math.hypot(xv, yv);
+          var u = (v + w) * RAD, Nr = N * RAD;
+          var xh = r * (Math.cos(Nr) * Math.cos(u) - Math.sin(Nr) * Math.sin(u) * Math.cos(inc));
+          var yh = r * (Math.sin(Nr) * Math.cos(u) + Math.cos(Nr) * Math.sin(u) * Math.cos(inc));
+          var zh = r * (Math.sin(u) * Math.sin(inc));
+          return { lon: norm360(Math.atan2(yh, xh) / RAD), lat: Math.atan2(zh, Math.hypot(xh, yh)) / RAD };
+        }
+
+        // Elementos keplerianos (JPL, tabla 1) y tasas por siglo juliano
+        var EARTH_EL = { a: 1.00000261, aR: 0.00000562, e: 0.01671123, eR: -0.00004392, I: -0.00001531, IR: -0.01294668, L: 100.46457166, LR: 35999.37244981, lp: 102.93768193, lpR: 0.32327364, om: 0, omR: 0 };
+        var PLANETS = [
+          { name: "Mercurio", sym: "☿", color: "#a08b6d", r: 3.0, a: 0.38709927, aR: 0.00000037, e: 0.20563593, eR: 0.00001906, I: 7.00497902, IR: -0.00594749, L: 252.25032350, LR: 149472.67411175, lp: 77.45779628, lpR: 0.16047689, om: 48.33076593, omR: -0.12534081 },
+          { name: "Venus", sym: "♀", color: "#d9a83c", r: 4.6, a: 0.72333566, aR: 0.00000390, e: 0.00677672, eR: -0.00004107, I: 3.39467605, IR: -0.00078890, L: 181.97909950, LR: 58517.81538729, lp: 131.60246718, lpR: 0.00268329, om: 76.67984255, omR: -0.27769418 },
+          { name: "Marte", sym: "♂", color: "#c65a2e", r: 3.8, a: 1.52371034, aR: 0.00001847, e: 0.09339410, eR: 0.00007882, I: 1.84969142, IR: -0.00813131, L: -4.55343205, LR: 19140.30268499, lp: -23.94362959, lpR: 0.44441088, om: 49.55953891, omR: -0.29257343 },
+          { name: "Júpiter", sym: "♃", color: "#b3854a", r: 6.0, a: 5.20288700, aR: -0.00011607, e: 0.04838624, eR: -0.00013253, I: 1.30439695, IR: -0.00183714, L: 34.39644051, LR: 3034.74612775, lp: 14.72847983, lpR: 0.21252668, om: 100.47390909, omR: 0.20469106 },
+          { name: "Saturno", sym: "♄", color: "#a98f4e", r: 5.0, ring: true, a: 9.53667594, aR: -0.00125060, e: 0.05386179, eR: -0.00050991, I: 2.48599187, IR: 0.00193609, L: 49.95424423, LR: 1222.49362201, lp: 92.59887831, lpR: -0.41897216, om: 113.66242448, omR: -0.28867794 }
+        ];
+        function helio(el, T) {
+          var a = el.a + el.aR * T, e = el.e + el.eR * T;
+          var I = (el.I + el.IR * T) * RAD;
+          var L = norm360(el.L + el.LR * T);
+          var lp = el.lp + el.lpR * T, om = el.om + el.omR * T;
+          var M = norm360(L - lp) * RAD, w = (lp - om) * RAD, Om = om * RAD;
+          var E = M + e * Math.sin(M) * (1 + e * Math.cos(M));
+          for (var k = 0; k < 4; k++) E = E - (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
+          var xp = a * (Math.cos(E) - e), yp = a * Math.sqrt(1 - e * e) * Math.sin(E);
+          var cw = Math.cos(w), sw = Math.sin(w), cO = Math.cos(Om), sO = Math.sin(Om), ci = Math.cos(I), si = Math.sin(I);
+          return {
+            x: (cw * cO - sw * sO * ci) * xp + (-sw * cO - cw * sO * ci) * yp,
+            y: (cw * sO + sw * cO * ci) * xp + (-sw * sO + cw * cO * ci) * yp,
+            z: (sw * si) * xp + (cw * si) * yp
+          };
+        }
+        function geoLon(el, T) {
+          var p = helio(el, T), q = helio(EARTH_EL, T);
+          return norm360(Math.atan2(p.y - q.y, p.x - q.x) / RAD);
+        }
+
+        // Hora sidérea local; la longitud se estima de la zona horaria
+        function lstHours(now, jd) {
+          var gmst = (18.697374558 + 24.06570982441908 * (jd - 2451545.0)) % 24;
+          var lonDeg = -now.getTimezoneOffset() * 0.25;
+          return ((gmst + lonDeg / 15) % 24 + 24) % 24;
+        }
+        // Altura del Sol sobre el horizonte (latitud del norte de México)
+        function sunAlt(sLon, lst) {
+          var eps = 23.4393 * RAD, lam = sLon * RAD;
+          var dec = Math.asin(Math.sin(eps) * Math.sin(lam));
+          var ra = Math.atan2(Math.cos(eps) * Math.sin(lam), Math.cos(lam)) / RAD / 15;
+          var H = (((lst - ra + 36) % 24) - 12) * 15 * RAD;
+          var phi = 26.9 * RAD;
+          return Math.asin(Math.sin(phi) * Math.sin(dec) + Math.cos(phi) * Math.cos(dec) * Math.cos(H)) / RAD;
+        }
+
+        function phaseName(D) {
+          if (D < 10 || D >= 350) return "Luna nueva";
+          if (D < 80) return "Luna creciente";
+          if (D < 100) return "Cuarto creciente";
+          if (D < 170) return "Gibosa creciente";
+          if (D < 190) return "Luna llena";
+          if (D < 260) return "Gibosa menguante";
+          if (D < 280) return "Cuarto menguante";
+          return "Luna menguante";
+        }
+        // Trazo de la parte iluminada de la Luna según la elongación D:
+        // el terminador es media elipse cuyo radio sigue cos(D).
+        function moonLitPath(cx, cy, r, D) {
+          var litRight = D <= 180;
+          var c = Math.cos(D * RAD);
+          var rx = Math.max(Math.abs(c) * r, 0.01);
+          var outer = litRight ? 1 : 0;
+          var term = (litRight ? c : -c) > 0 ? 0 : 1;
+          return "M" + cx + " " + (cy - r) +
+            " A" + r + " " + r + " 0 0 " + outer + " " + cx + " " + (cy + r) +
+            " A" + rx.toFixed(2) + " " + r + " 0 0 " + term + " " + cx + " " + (cy - r) + " Z";
+        }
+
+        // Catálogo de estrellas brillantes: [AR en horas, Dec en grados, magnitud]
+        var STARCAT = [
+          [6.752, -16.72, -1.46], [6.399, -52.70, -0.74], [14.660, -60.83, -0.27],
+          [14.261, 19.18, -0.05], [18.616, 38.78, 0.03], [5.278, 45.99, 0.08],
+          [5.242, -8.20, 0.13], [7.655, 5.22, 0.34], [5.919, 7.41, 0.42],
+          [1.629, -57.24, 0.46], [14.064, -60.37, 0.61], [19.846, 8.87, 0.76],
+          [4.599, 16.51, 0.86], [16.490, -26.43, 0.96], [13.420, -11.16, 0.97],
+          [7.755, 28.03, 1.14], [22.961, -29.62, 1.16], [20.690, 45.28, 1.25],
+          [12.795, -59.69, 1.25], [10.139, 11.97, 1.35], [6.977, -28.97, 1.50],
+          [7.577, 31.89, 1.58], [17.560, -37.10, 1.62], [12.519, -57.11, 1.63],
+          [5.419, 6.35, 1.64], [5.438, 28.61, 1.68], [5.603, -1.20, 1.69],
+          [22.137, -46.96, 1.74], [11.062, 61.75, 1.79], [3.405, 49.86, 1.81],
+          [16.811, -69.03, 1.91], [6.628, 16.40, 1.92], [20.427, -56.74, 1.94],
+          [6.378, -17.96, 1.98], [9.460, -8.66, 1.98], [2.119, 23.46, 2.00],
+          [18.921, -26.30, 2.02], [0.139, 29.09, 2.06], [17.582, 12.56, 2.07],
+          [14.845, 74.16, 2.08], [5.796, -9.67, 2.09], [3.136, 40.96, 2.09],
+          [11.817, 14.57, 2.11], [19.770, 27.96, 2.14]
+        ];
+
+        var starEls = [], bodyEls = {}, moonLitEl = null, moonPctEl = null;
+        (function buildSky() {
+          var layer = document.getElementById("skyLayer");
+          var ell = document.createElementNS(NS, "path");
+          ell.setAttribute("d", "M320 112 A86 248 0 0 1 320 608 A86 248 0 0 1 320 112");
+          ell.setAttribute("class", "ecliptic-line");
+          layer.appendChild(ell);
+          var gStars = document.createElementNS(NS, "g");
+          layer.appendChild(gStars);
+          STARCAT.forEach(function (s, i) {
+            var c = document.createElementNS(NS, "circle");
+            c.setAttribute("fill", i % 6 === 2 ? "#3d4c74" : (i % 8 === 5 ? "#6d5a33" : "#2e333d"));
+            gStars.appendChild(c);
+            starEls.push(c);
+          });
+          var gBodies = document.createElementNS(NS, "g");
+          layer.appendChild(gBodies);
+          var defs = [{ name: "Sol", sym: "☉", color: "#d99a26", r: 5.5 }].concat(PLANETS);
+          defs.forEach(function (b) {
+            var g = document.createElementNS(NS, "g");
+            if (b.ring) {
+              var rg = document.createElementNS(NS, "ellipse");
+              rg.setAttribute("rx", 9.5); rg.setAttribute("ry", 3.4);
+              rg.setAttribute("transform", "rotate(-16)");
+              rg.setAttribute("fill", "none");
+              rg.setAttribute("stroke", "#8a713f"); rg.setAttribute("stroke-width", 1.1);
+              g.appendChild(rg);
+            }
+            var c = document.createElementNS(NS, "circle");
+            c.setAttribute("r", b.r); c.setAttribute("fill", b.color);
+            c.setAttribute("stroke", "rgba(18,18,24,0.45)"); c.setAttribute("stroke-width", 0.8);
+            g.appendChild(c);
+            var t = document.createElementNS(NS, "text");
+            t.setAttribute("y", b.r + 11); t.setAttribute("class", "sky-label");
+            t.setAttribute("font-size", 10.5);
+            t.textContent = b.sym;
+            g.appendChild(t);
+            gBodies.appendChild(g);
+            bodyEls[b.name] = g;
+          });
+          var gMoon = document.createElementNS(NS, "g");
+          var sh = document.createElementNS(NS, "circle");
+          sh.setAttribute("cx", 370); sh.setAttribute("cy", 118); sh.setAttribute("r", 16);
+          sh.setAttribute("class", "moon-shadow");
+          gMoon.appendChild(sh);
+          moonLitEl = document.createElementNS(NS, "path");
+          moonLitEl.setAttribute("class", "moon-lit");
+          gMoon.appendChild(moonLitEl);
+          var rim = document.createElementNS(NS, "circle");
+          rim.setAttribute("cx", 370); rim.setAttribute("cy", 118); rim.setAttribute("r", 16);
+          rim.setAttribute("class", "moon-rim");
+          gMoon.appendChild(rim);
+          moonPctEl = document.createElementNS(NS, "text");
+          moonPctEl.setAttribute("x", 370); moonPctEl.setAttribute("y", 148);
+          moonPctEl.setAttribute("class", "moon-pct"); moonPctEl.setAttribute("font-size", 9.5);
+          gMoon.appendChild(moonPctEl);
+          layer.appendChild(gMoon);
+        })();
+
+        // Punto del óvalo de la eclíptica para una longitud dada:
+        // 0° arriba, creciendo en el sentido de las manecillas.
+        function eclPoint(lon) {
+          return { x: 320 + 86 * Math.sin(lon * RAD), y: 360 - 248 * Math.cos(lon * RAD) };
+        }
+        function placeBody(g, lon) {
+          var p = eclPoint(lon);
+          g.setAttribute("transform", "translate(" + p.x.toFixed(1) + " " + p.y.toFixed(1) + ")");
+        }
+
+        var lastSkyMinute = -1;
+        function updateSky(now) {
+          var jd = jdOf(now);
+          var dS = jd - 2451543.5;
+          var T = (jd - 2451545.0) / 36525;
+          var sLon = sunLon(dS);
+          var mn = moonCalc(dS);
+          var D = norm360(mn.lon - sLon);
+          var illum = (1 - Math.cos(D * RAD)) / 2;
+          moonLitEl.setAttribute("d", moonLitPath(370, 118, 16, D));
+          moonPctEl.textContent = Math.round(illum * 100) + "%";
+          placeBody(bodyEls["Sol"], sLon);
+          var planetText = [];
+          PLANETS.forEach(function (pl) {
+            var lam = geoLon(pl, T);
+            placeBody(bodyEls[pl.name], lam);
+            planetText.push(pl.name + " en " + zodiac(lam));
+          });
+          // Estrellas: el ángulo horario sale de la hora sidérea local;
+          // entran y salen de la placa conforme la Tierra gira.
+          var lst = lstHours(now, jd);
+          var t = now.getTime();
+          starEls.forEach(function (c, i) {
+            var s = STARCAT[i];
+            var H = ((lst - s[0] + 36) % 24) - 12;
+            if (H < -6.2 || H > 6.2) { c.setAttribute("display", "none"); return; }
+            c.removeAttribute("display");
+            c.setAttribute("cx", (320 + H * (88 / 6)).toFixed(1));
+            c.setAttribute("cy", (360 - s[1] * 4).toFixed(1));
+            var op = Math.min(0.6, Math.max(0.15, 0.62 - s[2] * 0.16));
+            op *= 0.8 + 0.2 * Math.sin(t / 700 + i * 1.7);
+            c.setAttribute("opacity", op.toFixed(2));
+            c.setAttribute("r", Math.min(2.7, Math.max(0.9, 2.7 - s[2] * 0.6)).toFixed(2));
+          });
+          // Aurora: sigue la oscuridad real (altura del Sol bajo el horizonte)
+          var dark = Math.min(1, Math.max(0, (-sunAlt(sLon, lst) - 3) / 11));
+          auroraEl.style.opacity = (dark * 0.9).toFixed(2);
+          // Resumen del cielo bajo el reloj, una vez por minuto
+          var mk = now.getHours() * 60 + now.getMinutes();
+          if (mk !== lastSkyMinute) {
+            lastSkyMinute = mk;
+            skyMoonEl.innerHTML = "<b>Luna</b> · " + phaseName(D) + " · " +
+              Math.round(illum * 100) + "% iluminada · en " + zodiac(mn.lon);
+            skyPlanetsEl.innerHTML = "<b>Planetas</b> · " + planetText.join(" · ") +
+              " · <b>Sol</b> en " + zodiac(sLon);
+          }
+        }
+
         // Giro de la espiral para una hora dada: una vuelta completa cada 12 horas.
-        // A la 1 en punto vale 0° y crece 30° por hora, de modo que el cruce con
-        // el eje vertical cae sobre el número de esa hora.
+        // A la 1 en punto vale 0° y crece 30° por hora, de modo que el cruce
+        // cae sobre el número de esa hora en su arco de esquina.
         function alphaFor(h12, mUnits) {
           var hVal = (h12 % 12) + mUnits / 12;
           return ((hVal - 1) * 30 % 360 + 360) % 360;
@@ -590,6 +1004,7 @@
         function pad(n) { return String(n).padStart(2, "0"); }
 
         function tick() {
+          updateSky(new Date());
           if (mode !== "live") return;
           var now = new Date();
           var h24 = now.getHours();
