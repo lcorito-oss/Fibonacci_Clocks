@@ -674,11 +674,6 @@
               var q = sp(thH - (Ls / K) * (1 - i / 14));
               td += (i === 0 ? "M" : "L") + q.x.toFixed(1) + " " + q.y.toFixed(1);
             }
-            var tg = thH + (fs * 0.6 + 4) / K;
-            var np = sp(tg), n0 = sp(tg - 0.5), n1 = sp(tg + 0.5);
-            var tx = n1.x - n0.x, ty = n1.y - n0.y, tl = Math.hypot(tx, ty) || 1;
-            var nx = -ty / tl, ny = tx / tl;
-            if (nx * (np.x - CENTER.x) + ny * (np.y - CENTER.y) < 0) { nx = -nx; ny = -ny; }
             var tick = document.createElementNS(NS, "path");
             // Las líneas del 12 y de la 1 van del largo del contenedor:
             // su marquita se prolonga siguiendo la misma espiral hacia
@@ -709,18 +704,22 @@
               numsG.appendChild(tick);
             }
             plateTickEls[h] = tick;
-            var numX = np.x + nx * (9 + fs * 0.5);
-            var numY = np.y + ny * (9 + fs * 0.5);
-            // Del 1 al 6, el número va del lado derecho de la línea
-            // blanca: a la derecha del extremo exterior de su
-            // marquita (el punto más a la derecha del trazo), centrado
-            // en vertical con ese extremo, para que nunca quede sobre
-            // la línea ni a su izquierda.
-            if (h <= 6) {
-              var outerPt = sp(thH - Ls / K);
-              numX = outerPt.x + 10 + fs * 0.32;
-              numY = outerPt.y;
-            }
+            // Todos los números, del 1 al 12, van del lado derecho de
+            // su línea blanca, igual que ya iban los del 1 al 6: a la
+            // derecha del extremo más a la derecha del trazo (en el
+            // 1-6 es el extremo exterior de la marquita; en el 7-12 es
+            // el extremo interior, porque ahí la espiral vuelve hacia
+            // la derecha), centrado en vertical con ese extremo, para
+            // que el número nunca quede sobre la línea, ni a su
+            // izquierda, ni debajo de ella —así el 12 ya no queda bajo
+            // su línea ni el 1 separado de la suya—.
+            var outerPt = sp(thH - Ls / K);
+            var innerPt = sp(thH);
+            var endPt = innerPt.x > outerPt.x ? innerPt : outerPt;
+            var numX = endPt.x + 13 + fs * 0.32;
+            var numY = endPt.y;
+            // El 7 va un poco más abajo que su extremo.
+            if (h === 7) numY += 7;
             var t = document.createElementNS(NS, "text");
             t.setAttribute("x", numX.toFixed(1));
             t.setAttribute("y", numY.toFixed(1));
