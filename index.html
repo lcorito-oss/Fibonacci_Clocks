@@ -337,6 +337,8 @@
       }
       .plate-nums { transition: opacity 0.3s ease; }
       .hide-nums .plate-nums { opacity: 0; }
+      #longLines { transition: opacity 0.3s ease; }
+      .hide-nums #longLines { opacity: 0; }
       .plate-num {
         font-family: "Archivo", system-ui, sans-serif;
         font-weight: 700;
@@ -480,7 +482,7 @@
   <body>
     <main>
       <div class="clock-frame">
-        <div id="squaresView">
+        <div id="squaresView" hidden>
           <div class="clock" id="clock" role="img" aria-label="Reloj de Fibonacci">
             <div class="sq sq5" data-v="5"><span class="num">5</span></div>
             <div class="sq sq3" data-v="3"><span class="num">3</span></div>
@@ -490,7 +492,7 @@
           </div>
           <div class="tick-track" aria-hidden="true"><div class="tick-fill" id="tickFill"></div></div>
         </div>
-        <div class="hands-wrap" id="handsView" data-material="negro" hidden>
+        <div class="hands-wrap" id="handsView" data-material="negro">
           <div class="aurora" id="aurora" aria-hidden="true"><div class="aur-band aur-a"></div><div class="aur-band aur-b"></div></div>
           <svg id="bgStars" viewBox="0 0 800 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
           <svg class="plate" id="plateSvg" viewBox="-28 -20 696 796" role="img" aria-label="Reloj de placa negra con espiral de Fibonacci">
@@ -525,6 +527,7 @@
               <clipPath id="outsideClip"><path clip-rule="evenodd" d="M-200 -200H900V1100H-200Z M154 28H486Q500 28 500 42V734Q500 748 486 748H154Q140 748 140 734V42Q140 28 154 28Z"></path></clipPath>
             </defs>
             <rect class="plate-body" id="plateBody" x="140" y="28" width="360" height="720" rx="14" fill="url(#blackGrad)"></rect>
+            <g id="longLines" clip-path="url(#plateClip)"></g>
             <g id="skyLayer" clip-path="url(#plateClip)"></g>
             <g id="ghosts" clip-path="url(#plateClip)"></g>
             <g id="plateNums" class="plate-nums"></g>
@@ -545,7 +548,7 @@
         <div class="dateline" id="dateline"></div>
       </div>
 
-      <div class="breakdown" id="breakdown">
+      <div class="breakdown" id="breakdown" hidden>
         <div class="chip"><span class="dot dot-h"></span><span class="dot dot-b" style="margin-left:-0.35em"></span>Horas: <b id="hoursSum">–</b></div>
         <div class="chip"><span class="dot dot-m"></span><span class="dot dot-b" style="margin-left:-0.35em"></span>Minutos: <b id="minutesSum">–</b></div>
       </div>
@@ -555,16 +558,16 @@
         <button class="btn" id="btnPractice" aria-pressed="false">Practicar</button>
         <button class="btn primary" id="btnNew" hidden>Nueva hora</button>
         <button class="btn" id="btnReveal" hidden>Revelar la hora</button>
-        <button class="btn" id="btnViewSq" aria-pressed="true">Cuadrados</button>
-        <button class="btn" id="btnViewHands" aria-pressed="false">Manecillas</button>
-        <button class="btn" id="btnMatCopper" aria-pressed="false" hidden>Cobre</button>
-        <button class="btn" id="btnMatSilver" aria-pressed="false" hidden>Plata</button>
-        <button class="btn" id="btnMatBlack" aria-pressed="true" hidden>Negro</button>
+        <button class="btn" id="btnViewSq" aria-pressed="false">Cuadrados</button>
+        <button class="btn" id="btnViewHands" aria-pressed="true">Manecillas</button>
+        <button class="btn" id="btnMatCopper" aria-pressed="false">Cobre</button>
+        <button class="btn" id="btnMatSilver" aria-pressed="false">Plata</button>
+        <button class="btn" id="btnMatBlack" aria-pressed="true">Negro</button>
         <button class="btn" id="btnNums" aria-pressed="true">Números visibles</button>
         <button class="btn primary" id="btnInstall" hidden>Instalar el reloj</button>
       </div>
 
-      <p class="read-hint" id="readHint">Suma los rojos y azules para la hora; los verdes y azules, por 5, dan los minutos.</p>
+      <p class="read-hint" id="readHint">La espiral cruza el número de la hora en curso, que se enciende en rosa igual que su marquita. La manecilla del centro marca los minutos.</p>
 
       <div class="install-panel" id="installPanel" hidden>
         <h2>Instalar en este dispositivo</h2>
@@ -607,7 +610,7 @@
         var readHintEl = document.getElementById("readHint");
 
         var mode = "live";           // "live" | "practice"
-        var view = "squares";        // "squares" | "hands"
+        var view = "hands";          // "squares" | "hands" (la carátula de manecillas es la vista principal)
         var revealed = true;
         var practiceTime = null;     // {h: 1-12, mUnits: 0-11}
         var lastShown = null;        // último tiempo dibujado {h, mUnits}
@@ -655,6 +658,7 @@
         (function buildPlate() {
           var NS = "http://www.w3.org/2000/svg";
           var numsG = document.getElementById("plateNums");
+          var longG = document.getElementById("longLines");
           var sizes = [18, 20, 23, 26, 29, 33]; // crece al alejarse del centro
           for (var h = 1; h <= 12; h++) {
             var pos = hourPos(h);
@@ -676,10 +680,34 @@
             var nx = -ty / tl, ny = tx / tl;
             if (nx * (np.x - CENTER.x) + ny * (np.y - CENTER.y) < 0) { nx = -nx; ny = -ny; }
             var tick = document.createElementNS(NS, "path");
-            tick.setAttribute("d", td);
-            tick.setAttribute("class", "plate-tick");
-            tick.setAttribute("fill", "none");
-            numsG.appendChild(tick);
+            // Las líneas del 12 y de la 1 van del largo del contenedor:
+            // su marquita se prolonga siguiendo la misma espiral hacia
+            // fuera hasta llegar al borde de la placa. Van en su propia
+            // capa, detrás del cielo, para que la del 1 pase por detrás
+            // de la Luna y no sobre ella. El número se queda donde
+            // estaba, junto al tramo corto de siempre.
+            if (h === 12 || h === 1) {
+              var ext = [];
+              for (var e = 0; e <= 420; e++) {
+                var qe = sp(thH - Ls / K - e * 0.5);
+                if (qe.x < 143 || qe.x > 497 || qe.y < 31 || qe.y > 745) break;
+                ext.push(qe);
+              }
+              var ld = "";
+              for (var ei = ext.length - 1; ei >= 0; ei--) {
+                ld += (ld ? "L" : "M") + ext[ei].x.toFixed(1) + " " + ext[ei].y.toFixed(1);
+              }
+              ld += td.replace(/^M/, "L");
+              tick.setAttribute("d", ld);
+              tick.setAttribute("class", "plate-tick");
+              tick.setAttribute("fill", "none");
+              longG.appendChild(tick);
+            } else {
+              tick.setAttribute("d", td);
+              tick.setAttribute("class", "plate-tick");
+              tick.setAttribute("fill", "none");
+              numsG.appendChild(tick);
+            }
             plateTickEls[h] = tick;
             var numX = np.x + nx * (9 + fs * 0.5);
             var numY = np.y + ny * (9 + fs * 0.5);
@@ -762,8 +790,10 @@
           for (var kk = 0; kk < 12; kk++) {
             // Se omiten dos espirales: la de kk=0, que cruza sobre la
             // Luna (pasa a ~11 unidades de su centro, 436,128), y la
-            // de kk=5, que baja por la izquierda del 6 y lo cruza.
-            if (kk === 0 || kk === 5) continue;
+            // de kk=6, cuyo barrido inferior es la curva que baja a la
+            // izquierda del 6. La línea propia del 6 es la de kk=5 y
+            // esa sí se queda, como la de las demás horas.
+            if (kk === 0 || kk === 6) continue;
             var gd = "";
             for (var m = 0; m <= 160; m++) {
               var thg = thMin + (thMax - thMin) * m / 160, pg = polar(spiralR(thg), thg + kk * 30);
@@ -903,14 +933,32 @@
         ];
 
         var moonSmokeEl = null, moonSmoke2El = null, moonPctEl = null;
-        // Cielo estrellado de FONDO: las estrellas ya no van grabadas en
-        // la placa, sino detrás de ella, repartidas por todo el panel.
-        // Posiciones pseudoaleatorias fijas (semilla propia), para que
-        // el fondo sea el mismo en cada visita.
-        (function buildBgStars() {
+        // El cielo se actualiza a la fecha, una vez al día (no a cada
+        // minuto): la semilla de las estrellas sale de la fecha de hoy,
+        // así el fondo y la placa estrenan cielo cada día y durante el
+        // día no cambian. Las estrellas de la placa son como las del
+        // fondo: puntos sencillos en blanco azulado, con algún toque
+        // cálido o azul, sin destellos en cruz ni tonos por material.
+        function dateKeyOf(d) {
+          return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
+        }
+        function seedFromKey(k) {
+          var s = 987654321;
+          for (var i = 0; i < k.length; i++) s = (s * 31 + k.charCodeAt(i)) % 2147483648;
+          return s;
+        }
+        function lcg(seed) {
+          return function () {
+            seed = (seed * 1103515245 + 12345) % 2147483648;
+            return seed / 2147483648;
+          };
+        }
+        // Cielo estrellado de FONDO: detrás de la placa, repartido por
+        // todo el panel.
+        function buildBgStars(seed) {
           var svg = document.getElementById("bgStars");
-          var seed = 1234567;
-          function rnd() { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; }
+          while (svg.firstChild) svg.removeChild(svg.firstChild);
+          var rnd = lcg(seed);
           for (var i = 0; i < 130; i++) {
             var c = document.createElementNS(NS, "circle");
             c.setAttribute("cx", (rnd() * 800).toFixed(1));
@@ -922,22 +970,22 @@
             c.setAttribute("opacity", (0.25 + rnd() * 0.6).toFixed(2));
             svg.appendChild(c);
           }
-        })();
-        (function buildSky() {
+        }
+        // Estrellas SOBRE la placa, iguales a las del fondo: mismos
+        // puntos, mismos tonos y misma forma de repartirlas, recortadas
+        // a la placa y dejando libre el círculo de la Luna.
+        var plateStarsG = null;
+        function buildPlateStars(seed) {
           var layer = document.getElementById("skyLayer");
-          // Campo de estrellas sobre la placa, en el lugar que ocupaban
-          // el Sol, los planetas y la eclíptica: puntos fijos repartidos
-          // por toda la placa (semilla propia, el mismo cielo en cada
-          // visita), con tres tonos según el material y tamaños variados.
-          // Van recortados a la placa y por debajo de la Luna, los
-          // números y las espirales.
+          if (plateStarsG && plateStarsG.parentNode) {
+            plateStarsG.parentNode.removeChild(plateStarsG);
+          }
           var gStars = document.createElementNS(NS, "g");
-          layer.appendChild(gStars);
-          var seed = 987654321;
-          function rnd() { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; }
-          for (var si = 0; si < 120; si++) {
-            var sx = 152 + rnd() * 336;
-            var sy = 40 + rnd() * 696;
+          plateStarsG = gStars;
+          var rnd = lcg(seed);
+          for (var si = 0; si < 130; si++) {
+            var sx = 146 + rnd() * 348;
+            var sy = 34 + rnd() * 708;
             // Deja libre el círculo de la Luna (436, 128, r 40),
             // a la derecha de la placa, debajo del 12
             var dx = sx - 436, dy = sy - 128;
@@ -945,23 +993,18 @@
             var sc = document.createElementNS(NS, "circle");
             sc.setAttribute("cx", sx.toFixed(1));
             sc.setAttribute("cy", sy.toFixed(1));
-            var bright = rnd();
-            sc.setAttribute("r", bright > 0.92 ? (2.1 + rnd() * 0.9).toFixed(2) : (0.7 + rnd() * 1.5).toFixed(2));
-            sc.setAttribute("class", si % 5 === 3 ? "star-b" : (si % 7 === 5 ? "star-c" : "star-a"));
-            sc.setAttribute("opacity", (0.35 + rnd() * 0.6).toFixed(2));
+            sc.setAttribute("r", (0.7 + rnd() * 1.6).toFixed(2));
+            sc.setAttribute("class", "bg-star");
+            if (si % 11 === 4) sc.setAttribute("style", "fill:#ffe9b0");
+            else if (si % 13 === 6) sc.setAttribute("style", "fill:#bcd0ff");
+            sc.setAttribute("opacity", (0.25 + rnd() * 0.6).toFixed(2));
             gStars.appendChild(sc);
-            // Destello en cruz para las estrellas más brillantes
-            if (bright > 0.92) {
-              var sp = document.createElementNS(NS, "path");
-              var sr = 5.5 + rnd() * 2.5;
-              sp.setAttribute("d", "M" + (sx - sr).toFixed(1) + " " + sy.toFixed(1) + " L" + (sx + sr).toFixed(1) + " " + sy.toFixed(1) + " M" + sx.toFixed(1) + " " + (sy - sr).toFixed(1) + " L" + sx.toFixed(1) + " " + (sy + sr).toFixed(1));
-              sp.setAttribute("stroke", "var(--p-star1)");
-              sp.setAttribute("stroke-width", 0.9);
-              sp.setAttribute("opacity", "0.55");
-              sp.setAttribute("fill", "none");
-              gStars.appendChild(sp);
-            }
           }
+          if (layer.firstChild) layer.insertBefore(gStars, layer.firstChild);
+          else layer.appendChild(gStars);
+        }
+        (function buildSky() {
+          var layer = document.getElementById("skyLayer");
           // La Luna con su foto real (la misma de calendario-lunar),
           // más grande (radio 40) y a la derecha de la placa, debajo
           // del 12 (436, 128), aprovechando ese hueco: la imagen va
@@ -1094,8 +1137,22 @@
 
         function pad(n) { return String(n).padStart(2, "0"); }
 
+        // El cielo (estrellas del fondo y de la placa, fase de la Luna
+        // y aurora) se refresca solo cuando cambia la fecha: una vez
+        // al día, no a cada minuto ni a cada segundo.
+        var lastSkyKey = null;
+        function refreshSky(now) {
+          var k = dateKeyOf(now);
+          if (k === lastSkyKey) return;
+          lastSkyKey = k;
+          var seed = seedFromKey(k);
+          buildBgStars(seed);
+          buildPlateStars(seed + 777);
+          updateSky(now);
+        }
+
         function tick() {
-          updateSky(new Date());
+          refreshSky(new Date());
           if (mode !== "live") return;
           var now = new Date();
           var h24 = now.getHours();
@@ -1228,8 +1285,8 @@
       // permite, se registra con el ámbito por defecto del archivo.
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", function () {
-          navigator.serviceWorker.register("data:application/javascript;base64,LyogUmVsb2ogZGUgRmlib25hY2NpIOKAlCBzZXJ2aWNlIHdvcmtlcjogZ3VhcmRhIGxhIHDDoWdpbmEsIHN1cyBpY29ub3MgeQogICBsYSBmb3RvIGRlIGxhIEx1bmEgcGFyYSBxdWUgZWwgcmVsb2ogYWJyYSBzaW4gY29uZXhpw7NuIHRyYXMgbGEKICAgcHJpbWVyYSB2aXNpdGEsIHlhIGluc3RhbGFkbyBvIGVuIGVsIG5hdmVnYWRvci4gKi8KdmFyIENBQ0hFID0gInJlbG9qLWZpYm9uYWNjaS12NCI7CnZhciBJTkRFWCA9ICIuLi9pbmRleC5odG1sIjsKdmFyIFBSRUNBQ0hFID0gWwogICIuLi9pbmRleC5odG1sIiwKICAiLi9tYW5pZmVzdC53ZWJtYW5pZmVzdCIsCiAgIi4vYnJvd3NlcmNvbmZpZy54bWwiLAogICIuL21vb24tc3VyZmFjZS5wbmciLAogICIuL2ljb24tMTQ0LnBuZyIsCiAgIi4vaWNvbi0xOTIucG5nIiwKICAiLi9pY29uLTI1Ni5wbmciLAogICIuL2ljb24tMzg0LnBuZyIsCiAgIi4vaWNvbi01MTIucG5nIiwKICAiLi9pY29uLW1hc2thYmxlLTUxMi5wbmciLAogICIuL2FwcGxlLXRvdWNoLWljb24ucG5nIiwKICAiLi9hcHBsZS10b3VjaC1pY29uLTEyMC5wbmciLAogICIuL2FwcGxlLXRvdWNoLWljb24tMTUyLnBuZyIsCiAgIi4vYXBwbGUtdG91Y2gtaWNvbi0xNjcucG5nIiwKICAiLi9mYXZpY29uLTE2LnBuZyIsCiAgIi4vZmF2aWNvbi0zMi5wbmciLAogICIuL2Zhdmljb24tNDgucG5nIiwKICAiLi9mYXZpY29uLmljbyIsCiAgIi4vbXN0aWxlLTE1MC5wbmciCl07CgpzZWxmLmFkZEV2ZW50TGlzdGVuZXIoImluc3RhbGwiLCBmdW5jdGlvbiAoZXZlbnQpIHsKICBldmVudC53YWl0VW50aWwoCiAgICBjYWNoZXMub3BlbihDQUNIRSkudGhlbihmdW5jdGlvbiAoY2FjaGUpIHsKICAgICAgcmV0dXJuIGNhY2hlLmFkZEFsbChQUkVDQUNIRSk7CiAgICB9KS50aGVuKGZ1bmN0aW9uICgpIHsgcmV0dXJuIHNlbGYuc2tpcFdhaXRpbmcoKTsgfSkKICApOwp9KTsKCnNlbGYuYWRkRXZlbnRMaXN0ZW5lcigiYWN0aXZhdGUiLCBmdW5jdGlvbiAoZXZlbnQpIHsKICBldmVudC53YWl0VW50aWwoCiAgICBjYWNoZXMua2V5cygpLnRoZW4oZnVuY3Rpb24gKGtleXMpIHsKICAgICAgcmV0dXJuIFByb21pc2UuYWxsKGtleXMubWFwKGZ1bmN0aW9uIChrKSB7CiAgICAgICAgcmV0dXJuIGsgPT09IENBQ0hFID8gbnVsbCA6IGNhY2hlcy5kZWxldGUoayk7CiAgICAgIH0pKTsKICAgIH0pLnRoZW4oZnVuY3Rpb24gKCkgeyByZXR1cm4gc2VsZi5jbGllbnRzLmNsYWltKCk7IH0pCiAgKTsKfSk7CgpzZWxmLmFkZEV2ZW50TGlzdGVuZXIoImZldGNoIiwgZnVuY3Rpb24gKGV2ZW50KSB7CiAgaWYgKGV2ZW50LnJlcXVlc3QubWV0aG9kICE9PSAiR0VUIikgcmV0dXJuOwogIGV2ZW50LnJlc3BvbmRXaXRoKAogICAgY2FjaGVzLm1hdGNoKGV2ZW50LnJlcXVlc3QsIHsgaWdub3JlU2VhcmNoOiB0cnVlIH0pLnRoZW4oZnVuY3Rpb24gKGhpdCkgewogICAgICBpZiAoaGl0KSByZXR1cm4gaGl0OwogICAgICByZXR1cm4gZmV0Y2goZXZlbnQucmVxdWVzdCkudGhlbihmdW5jdGlvbiAocmVzKSB7CiAgICAgICAgaWYgKHJlcyAmJiByZXMub2sgJiYgbmV3IFVSTChldmVudC5yZXF1ZXN0LnVybCkub3JpZ2luID09PSBzZWxmLmxvY2F0aW9uLm9yaWdpbikgewogICAgICAgICAgdmFyIGNvcHkgPSByZXMuY2xvbmUoKTsKICAgICAgICAgIGNhY2hlcy5vcGVuKENBQ0hFKS50aGVuKGZ1bmN0aW9uIChjYWNoZSkgeyBjYWNoZS5wdXQoZXZlbnQucmVxdWVzdCwgY29weSk7IH0pOwogICAgICAgIH0KICAgICAgICByZXR1cm4gcmVzOwogICAgICB9KS5jYXRjaChmdW5jdGlvbiAoKSB7CiAgICAgICAgLy8gU2luIGNvbmV4acOzbiB5IHNpbiBjb3BpYSBkZWwgcmVjdXJzbzogc2kgZXJhIHVuYSBuYXZlZ2FjacOzbiwKICAgICAgICAvLyBzZSBzaXJ2ZSBsYSBww6FnaW5hIGd1YXJkYWRhIHBhcmEgcXVlIGVsIHJlbG9qIHNpZ2EgYWJyaWVuZG8uCiAgICAgICAgaWYgKGV2ZW50LnJlcXVlc3QubW9kZSA9PT0gIm5hdmlnYXRlIikgewogICAgICAgICAgcmV0dXJuIGNhY2hlcy5tYXRjaChJTkRFWCwgeyBpZ25vcmVTZWFyY2g6IHRydWUgfSk7CiAgICAgICAgfQogICAgICAgIHJldHVybiBSZXNwb25zZS5lcnJvcigpOwogICAgICB9KTsKICAgIH0pCiAgKTsKfSk7Cg==", { scope: "./" })
-            .catch(function () { return navigator.serviceWorker.register("data:application/javascript;base64,LyogUmVsb2ogZGUgRmlib25hY2NpIOKAlCBzZXJ2aWNlIHdvcmtlcjogZ3VhcmRhIGxhIHDDoWdpbmEsIHN1cyBpY29ub3MgeQogICBsYSBmb3RvIGRlIGxhIEx1bmEgcGFyYSBxdWUgZWwgcmVsb2ogYWJyYSBzaW4gY29uZXhpw7NuIHRyYXMgbGEKICAgcHJpbWVyYSB2aXNpdGEsIHlhIGluc3RhbGFkbyBvIGVuIGVsIG5hdmVnYWRvci4gKi8KdmFyIENBQ0hFID0gInJlbG9qLWZpYm9uYWNjaS12NCI7CnZhciBJTkRFWCA9ICIuLi9pbmRleC5odG1sIjsKdmFyIFBSRUNBQ0hFID0gWwogICIuLi9pbmRleC5odG1sIiwKICAiLi9tYW5pZmVzdC53ZWJtYW5pZmVzdCIsCiAgIi4vYnJvd3NlcmNvbmZpZy54bWwiLAogICIuL21vb24tc3VyZmFjZS5wbmciLAogICIuL2ljb24tMTQ0LnBuZyIsCiAgIi4vaWNvbi0xOTIucG5nIiwKICAiLi9pY29uLTI1Ni5wbmciLAogICIuL2ljb24tMzg0LnBuZyIsCiAgIi4vaWNvbi01MTIucG5nIiwKICAiLi9pY29uLW1hc2thYmxlLTUxMi5wbmciLAogICIuL2FwcGxlLXRvdWNoLWljb24ucG5nIiwKICAiLi9hcHBsZS10b3VjaC1pY29uLTEyMC5wbmciLAogICIuL2FwcGxlLXRvdWNoLWljb24tMTUyLnBuZyIsCiAgIi4vYXBwbGUtdG91Y2gtaWNvbi0xNjcucG5nIiwKICAiLi9mYXZpY29uLTE2LnBuZyIsCiAgIi4vZmF2aWNvbi0zMi5wbmciLAogICIuL2Zhdmljb24tNDgucG5nIiwKICAiLi9mYXZpY29uLmljbyIsCiAgIi4vbXN0aWxlLTE1MC5wbmciCl07CgpzZWxmLmFkZEV2ZW50TGlzdGVuZXIoImluc3RhbGwiLCBmdW5jdGlvbiAoZXZlbnQpIHsKICBldmVudC53YWl0VW50aWwoCiAgICBjYWNoZXMub3BlbihDQUNIRSkudGhlbihmdW5jdGlvbiAoY2FjaGUpIHsKICAgICAgcmV0dXJuIGNhY2hlLmFkZEFsbChQUkVDQUNIRSk7CiAgICB9KS50aGVuKGZ1bmN0aW9uICgpIHsgcmV0dXJuIHNlbGYuc2tpcFdhaXRpbmcoKTsgfSkKICApOwp9KTsKCnNlbGYuYWRkRXZlbnRMaXN0ZW5lcigiYWN0aXZhdGUiLCBmdW5jdGlvbiAoZXZlbnQpIHsKICBldmVudC53YWl0VW50aWwoCiAgICBjYWNoZXMua2V5cygpLnRoZW4oZnVuY3Rpb24gKGtleXMpIHsKICAgICAgcmV0dXJuIFByb21pc2UuYWxsKGtleXMubWFwKGZ1bmN0aW9uIChrKSB7CiAgICAgICAgcmV0dXJuIGsgPT09IENBQ0hFID8gbnVsbCA6IGNhY2hlcy5kZWxldGUoayk7CiAgICAgIH0pKTsKICAgIH0pLnRoZW4oZnVuY3Rpb24gKCkgeyByZXR1cm4gc2VsZi5jbGllbnRzLmNsYWltKCk7IH0pCiAgKTsKfSk7CgpzZWxmLmFkZEV2ZW50TGlzdGVuZXIoImZldGNoIiwgZnVuY3Rpb24gKGV2ZW50KSB7CiAgaWYgKGV2ZW50LnJlcXVlc3QubWV0aG9kICE9PSAiR0VUIikgcmV0dXJuOwogIGV2ZW50LnJlc3BvbmRXaXRoKAogICAgY2FjaGVzLm1hdGNoKGV2ZW50LnJlcXVlc3QsIHsgaWdub3JlU2VhcmNoOiB0cnVlIH0pLnRoZW4oZnVuY3Rpb24gKGhpdCkgewogICAgICBpZiAoaGl0KSByZXR1cm4gaGl0OwogICAgICByZXR1cm4gZmV0Y2goZXZlbnQucmVxdWVzdCkudGhlbihmdW5jdGlvbiAocmVzKSB7CiAgICAgICAgaWYgKHJlcyAmJiByZXMub2sgJiYgbmV3IFVSTChldmVudC5yZXF1ZXN0LnVybCkub3JpZ2luID09PSBzZWxmLmxvY2F0aW9uLm9yaWdpbikgewogICAgICAgICAgdmFyIGNvcHkgPSByZXMuY2xvbmUoKTsKICAgICAgICAgIGNhY2hlcy5vcGVuKENBQ0hFKS50aGVuKGZ1bmN0aW9uIChjYWNoZSkgeyBjYWNoZS5wdXQoZXZlbnQucmVxdWVzdCwgY29weSk7IH0pOwogICAgICAgIH0KICAgICAgICByZXR1cm4gcmVzOwogICAgICB9KS5jYXRjaChmdW5jdGlvbiAoKSB7CiAgICAgICAgLy8gU2luIGNvbmV4acOzbiB5IHNpbiBjb3BpYSBkZWwgcmVjdXJzbzogc2kgZXJhIHVuYSBuYXZlZ2FjacOzbiwKICAgICAgICAvLyBzZSBzaXJ2ZSBsYSBww6FnaW5hIGd1YXJkYWRhIHBhcmEgcXVlIGVsIHJlbG9qIHNpZ2EgYWJyaWVuZG8uCiAgICAgICAgaWYgKGV2ZW50LnJlcXVlc3QubW9kZSA9PT0gIm5hdmlnYXRlIikgewogICAgICAgICAgcmV0dXJuIGNhY2hlcy5tYXRjaChJTkRFWCwgeyBpZ25vcmVTZWFyY2g6IHRydWUgfSk7CiAgICAgICAgfQogICAgICAgIHJldHVybiBSZXNwb25zZS5lcnJvcigpOwogICAgICB9KTsKICAgIH0pCiAgKTsKfSk7Cg=="); })
+          navigator.serviceWorker.register("data:application/javascript;base64,LyogUmVsb2ogZGUgRmlib25hY2NpIOKAlCBzZXJ2aWNlIHdvcmtlcjogZ3VhcmRhIGxhIHDDoWdpbmEsIHN1cyBpY29ub3MgeQogICBsYSBmb3RvIGRlIGxhIEx1bmEgcGFyYSBxdWUgZWwgcmVsb2ogYWJyYSBzaW4gY29uZXhpw7NuIHRyYXMgbGEKICAgcHJpbWVyYSB2aXNpdGEsIHlhIGluc3RhbGFkbyBvIGVuIGVsIG5hdmVnYWRvci4gKi8KdmFyIENBQ0hFID0gInJlbG9qLWZpYm9uYWNjaS12NSI7CnZhciBJTkRFWCA9ICIuLi9pbmRleC5odG1sIjsKdmFyIFBSRUNBQ0hFID0gWwogICIuLi9pbmRleC5odG1sIiwKICAiLi9tYW5pZmVzdC53ZWJtYW5pZmVzdCIsCiAgIi4vYnJvd3NlcmNvbmZpZy54bWwiLAogICIuL21vb24tc3VyZmFjZS5wbmciLAogICIuL2ljb24tMTQ0LnBuZyIsCiAgIi4vaWNvbi0xOTIucG5nIiwKICAiLi9pY29uLTI1Ni5wbmciLAogICIuL2ljb24tMzg0LnBuZyIsCiAgIi4vaWNvbi01MTIucG5nIiwKICAiLi9pY29uLW1hc2thYmxlLTUxMi5wbmciLAogICIuL2FwcGxlLXRvdWNoLWljb24ucG5nIiwKICAiLi9hcHBsZS10b3VjaC1pY29uLTEyMC5wbmciLAogICIuL2FwcGxlLXRvdWNoLWljb24tMTUyLnBuZyIsCiAgIi4vYXBwbGUtdG91Y2gtaWNvbi0xNjcucG5nIiwKICAiLi9mYXZpY29uLTE2LnBuZyIsCiAgIi4vZmF2aWNvbi0zMi5wbmciLAogICIuL2Zhdmljb24tNDgucG5nIiwKICAiLi9mYXZpY29uLmljbyIsCiAgIi4vbXN0aWxlLTE1MC5wbmciCl07CgpzZWxmLmFkZEV2ZW50TGlzdGVuZXIoImluc3RhbGwiLCBmdW5jdGlvbiAoZXZlbnQpIHsKICBldmVudC53YWl0VW50aWwoCiAgICBjYWNoZXMub3BlbihDQUNIRSkudGhlbihmdW5jdGlvbiAoY2FjaGUpIHsKICAgICAgcmV0dXJuIGNhY2hlLmFkZEFsbChQUkVDQUNIRSk7CiAgICB9KS50aGVuKGZ1bmN0aW9uICgpIHsgcmV0dXJuIHNlbGYuc2tpcFdhaXRpbmcoKTsgfSkKICApOwp9KTsKCnNlbGYuYWRkRXZlbnRMaXN0ZW5lcigiYWN0aXZhdGUiLCBmdW5jdGlvbiAoZXZlbnQpIHsKICBldmVudC53YWl0VW50aWwoCiAgICBjYWNoZXMua2V5cygpLnRoZW4oZnVuY3Rpb24gKGtleXMpIHsKICAgICAgcmV0dXJuIFByb21pc2UuYWxsKGtleXMubWFwKGZ1bmN0aW9uIChrKSB7CiAgICAgICAgcmV0dXJuIGsgPT09IENBQ0hFID8gbnVsbCA6IGNhY2hlcy5kZWxldGUoayk7CiAgICAgIH0pKTsKICAgIH0pLnRoZW4oZnVuY3Rpb24gKCkgeyByZXR1cm4gc2VsZi5jbGllbnRzLmNsYWltKCk7IH0pCiAgKTsKfSk7CgpzZWxmLmFkZEV2ZW50TGlzdGVuZXIoImZldGNoIiwgZnVuY3Rpb24gKGV2ZW50KSB7CiAgaWYgKGV2ZW50LnJlcXVlc3QubWV0aG9kICE9PSAiR0VUIikgcmV0dXJuOwogIGV2ZW50LnJlc3BvbmRXaXRoKAogICAgY2FjaGVzLm1hdGNoKGV2ZW50LnJlcXVlc3QsIHsgaWdub3JlU2VhcmNoOiB0cnVlIH0pLnRoZW4oZnVuY3Rpb24gKGhpdCkgewogICAgICBpZiAoaGl0KSByZXR1cm4gaGl0OwogICAgICByZXR1cm4gZmV0Y2goZXZlbnQucmVxdWVzdCkudGhlbihmdW5jdGlvbiAocmVzKSB7CiAgICAgICAgaWYgKHJlcyAmJiByZXMub2sgJiYgbmV3IFVSTChldmVudC5yZXF1ZXN0LnVybCkub3JpZ2luID09PSBzZWxmLmxvY2F0aW9uLm9yaWdpbikgewogICAgICAgICAgdmFyIGNvcHkgPSByZXMuY2xvbmUoKTsKICAgICAgICAgIGNhY2hlcy5vcGVuKENBQ0hFKS50aGVuKGZ1bmN0aW9uIChjYWNoZSkgeyBjYWNoZS5wdXQoZXZlbnQucmVxdWVzdCwgY29weSk7IH0pOwogICAgICAgIH0KICAgICAgICByZXR1cm4gcmVzOwogICAgICB9KS5jYXRjaChmdW5jdGlvbiAoKSB7CiAgICAgICAgLy8gU2luIGNvbmV4acOzbiB5IHNpbiBjb3BpYSBkZWwgcmVjdXJzbzogc2kgZXJhIHVuYSBuYXZlZ2FjacOzbiwKICAgICAgICAvLyBzZSBzaXJ2ZSBsYSBww6FnaW5hIGd1YXJkYWRhIHBhcmEgcXVlIGVsIHJlbG9qIHNpZ2EgYWJyaWVuZG8uCiAgICAgICAgaWYgKGV2ZW50LnJlcXVlc3QubW9kZSA9PT0gIm5hdmlnYXRlIikgewogICAgICAgICAgcmV0dXJuIGNhY2hlcy5tYXRjaChJTkRFWCwgeyBpZ25vcmVTZWFyY2g6IHRydWUgfSk7CiAgICAgICAgfQogICAgICAgIHJldHVybiBSZXNwb25zZS5lcnJvcigpOwogICAgICB9KTsKICAgIH0pCiAgKTsKfSk7Cg==", { scope: "./" })
+            .catch(function () { return navigator.serviceWorker.register("data:application/javascript;base64,LyogUmVsb2ogZGUgRmlib25hY2NpIOKAlCBzZXJ2aWNlIHdvcmtlcjogZ3VhcmRhIGxhIHDDoWdpbmEsIHN1cyBpY29ub3MgeQogICBsYSBmb3RvIGRlIGxhIEx1bmEgcGFyYSBxdWUgZWwgcmVsb2ogYWJyYSBzaW4gY29uZXhpw7NuIHRyYXMgbGEKICAgcHJpbWVyYSB2aXNpdGEsIHlhIGluc3RhbGFkbyBvIGVuIGVsIG5hdmVnYWRvci4gKi8KdmFyIENBQ0hFID0gInJlbG9qLWZpYm9uYWNjaS12NSI7CnZhciBJTkRFWCA9ICIuLi9pbmRleC5odG1sIjsKdmFyIFBSRUNBQ0hFID0gWwogICIuLi9pbmRleC5odG1sIiwKICAiLi9tYW5pZmVzdC53ZWJtYW5pZmVzdCIsCiAgIi4vYnJvd3NlcmNvbmZpZy54bWwiLAogICIuL21vb24tc3VyZmFjZS5wbmciLAogICIuL2ljb24tMTQ0LnBuZyIsCiAgIi4vaWNvbi0xOTIucG5nIiwKICAiLi9pY29uLTI1Ni5wbmciLAogICIuL2ljb24tMzg0LnBuZyIsCiAgIi4vaWNvbi01MTIucG5nIiwKICAiLi9pY29uLW1hc2thYmxlLTUxMi5wbmciLAogICIuL2FwcGxlLXRvdWNoLWljb24ucG5nIiwKICAiLi9hcHBsZS10b3VjaC1pY29uLTEyMC5wbmciLAogICIuL2FwcGxlLXRvdWNoLWljb24tMTUyLnBuZyIsCiAgIi4vYXBwbGUtdG91Y2gtaWNvbi0xNjcucG5nIiwKICAiLi9mYXZpY29uLTE2LnBuZyIsCiAgIi4vZmF2aWNvbi0zMi5wbmciLAogICIuL2Zhdmljb24tNDgucG5nIiwKICAiLi9mYXZpY29uLmljbyIsCiAgIi4vbXN0aWxlLTE1MC5wbmciCl07CgpzZWxmLmFkZEV2ZW50TGlzdGVuZXIoImluc3RhbGwiLCBmdW5jdGlvbiAoZXZlbnQpIHsKICBldmVudC53YWl0VW50aWwoCiAgICBjYWNoZXMub3BlbihDQUNIRSkudGhlbihmdW5jdGlvbiAoY2FjaGUpIHsKICAgICAgcmV0dXJuIGNhY2hlLmFkZEFsbChQUkVDQUNIRSk7CiAgICB9KS50aGVuKGZ1bmN0aW9uICgpIHsgcmV0dXJuIHNlbGYuc2tpcFdhaXRpbmcoKTsgfSkKICApOwp9KTsKCnNlbGYuYWRkRXZlbnRMaXN0ZW5lcigiYWN0aXZhdGUiLCBmdW5jdGlvbiAoZXZlbnQpIHsKICBldmVudC53YWl0VW50aWwoCiAgICBjYWNoZXMua2V5cygpLnRoZW4oZnVuY3Rpb24gKGtleXMpIHsKICAgICAgcmV0dXJuIFByb21pc2UuYWxsKGtleXMubWFwKGZ1bmN0aW9uIChrKSB7CiAgICAgICAgcmV0dXJuIGsgPT09IENBQ0hFID8gbnVsbCA6IGNhY2hlcy5kZWxldGUoayk7CiAgICAgIH0pKTsKICAgIH0pLnRoZW4oZnVuY3Rpb24gKCkgeyByZXR1cm4gc2VsZi5jbGllbnRzLmNsYWltKCk7IH0pCiAgKTsKfSk7CgpzZWxmLmFkZEV2ZW50TGlzdGVuZXIoImZldGNoIiwgZnVuY3Rpb24gKGV2ZW50KSB7CiAgaWYgKGV2ZW50LnJlcXVlc3QubWV0aG9kICE9PSAiR0VUIikgcmV0dXJuOwogIGV2ZW50LnJlc3BvbmRXaXRoKAogICAgY2FjaGVzLm1hdGNoKGV2ZW50LnJlcXVlc3QsIHsgaWdub3JlU2VhcmNoOiB0cnVlIH0pLnRoZW4oZnVuY3Rpb24gKGhpdCkgewogICAgICBpZiAoaGl0KSByZXR1cm4gaGl0OwogICAgICByZXR1cm4gZmV0Y2goZXZlbnQucmVxdWVzdCkudGhlbihmdW5jdGlvbiAocmVzKSB7CiAgICAgICAgaWYgKHJlcyAmJiByZXMub2sgJiYgbmV3IFVSTChldmVudC5yZXF1ZXN0LnVybCkub3JpZ2luID09PSBzZWxmLmxvY2F0aW9uLm9yaWdpbikgewogICAgICAgICAgdmFyIGNvcHkgPSByZXMuY2xvbmUoKTsKICAgICAgICAgIGNhY2hlcy5vcGVuKENBQ0hFKS50aGVuKGZ1bmN0aW9uIChjYWNoZSkgeyBjYWNoZS5wdXQoZXZlbnQucmVxdWVzdCwgY29weSk7IH0pOwogICAgICAgIH0KICAgICAgICByZXR1cm4gcmVzOwogICAgICB9KS5jYXRjaChmdW5jdGlvbiAoKSB7CiAgICAgICAgLy8gU2luIGNvbmV4acOzbiB5IHNpbiBjb3BpYSBkZWwgcmVjdXJzbzogc2kgZXJhIHVuYSBuYXZlZ2FjacOzbiwKICAgICAgICAvLyBzZSBzaXJ2ZSBsYSBww6FnaW5hIGd1YXJkYWRhIHBhcmEgcXVlIGVsIHJlbG9qIHNpZ2EgYWJyaWVuZG8uCiAgICAgICAgaWYgKGV2ZW50LnJlcXVlc3QubW9kZSA9PT0gIm5hdmlnYXRlIikgewogICAgICAgICAgcmV0dXJuIGNhY2hlcy5tYXRjaChJTkRFWCwgeyBpZ25vcmVTZWFyY2g6IHRydWUgfSk7CiAgICAgICAgfQogICAgICAgIHJldHVybiBSZXNwb25zZS5lcnJvcigpOwogICAgICB9KTsKICAgIH0pCiAgKTsKfSk7Cg=="); })
             .catch(function () {});
         });
       }
