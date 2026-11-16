@@ -259,7 +259,12 @@
       .spiral-arm { fill: var(--p-spiral); stroke: none; }
       .spiral-out { fill: #e7e9ee; stroke: none; }
       .ghost { fill: none; stroke: var(--p-spiral); stroke-width: 1; opacity: var(--p-ghostop, 0.2); }
-      .cast { filter: drop-shadow(0 10px 14px rgba(8, 10, 14, 0.35)); }
+      .cast { filter: drop-shadow(calc(var(--sx, 6px) * 3) calc(var(--sy, 10px) * 3) calc(var(--sb, 14px) * 1.8) rgba(8, 10, 14, var(--so, 0.4))); }
+      .cast2 { filter: drop-shadow(calc(var(--sx, 6px) * 1.6) calc(var(--sy, 10px) * 1.6) calc(var(--sb, 14px) * 0.9) rgba(8, 10, 14, var(--so, 0.4))); --amp: 2.5px; }
+      .float { --amp: 4px; animation: lev 7s ease-in-out infinite; }
+      @keyframes lev { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(calc(var(--amp) * -1)); } }
+      .par { transform: translate(calc(var(--px, 0) * 5px), calc(var(--py, 0) * 5px)); transition: transform 0.3s ease-out; }
+      @media (prefers-reduced-motion: reduce) { .float { animation: none; } .par { transform: none !important; } }
       /* Centro sutil: sin círculo ni aro, solo las marcas y los
          números de los minutos, tenues, y una manecilla fina. */
       .dial-face { display: none; }
@@ -506,17 +511,17 @@
             <!-- La espiral va siempre por detrás de todo lo demás de la
                  placa —números, marquitas, Luna y carátula de minutos—,
                  para que al pasar sobre un número nunca lo oculte. -->
-            <g class="cast">
-              <g id="spiralArm"><path class="spiral-arm" id="spiralPath" d=""></path></g>
-              <g clip-path="url(#outsideClip)"><g id="spiralArm2"><path class="spiral-out" id="spiralPathOut" d=""></path></g></g>
+            <g>
+              <g class="cast float"><g class="par"><g id="spiralArm"><path class="spiral-arm" id="spiralPath" d=""></path></g></g></g>
+              <g clip-path="url(#outsideClip)"><g class="float"><g class="par"><g id="spiralArm2"><path class="spiral-out" id="spiralPathOut" d=""></path></g></g></g></g>
             </g>
             <g id="skyLayer" clip-path="url(#plateClip)"></g>
             <g id="ghosts" clip-path="url(#plateClip)"></g>
             <g id="plateNums" class="plate-nums"></g>
             <g id="minuteDial"></g>
-            <g id="handMinute"><polygon class="hand-min" points="320,346 321.5,384 320,398 318.5,384"></polygon></g>
+            <g class="cast2 float"><g id="handMinute"><polygon class="hand-min" points="320,346 321.5,384 320,398 318.5,384"></polygon></g>
             <circle class="hub" cx="320" cy="388" r="2.6"></circle>
-            <circle class="hub-dot" cx="320" cy="388" r="1"></circle>
+            <circle class="hub-dot" cx="320" cy="388" r="1"></circle></g>
           </svg>
         </div>
       </div>
@@ -602,9 +607,9 @@
         // dos arcos: del 7 al 12 subiendo por la izquierda (el 7 cerca
         // del centro, el 12 arriba) y del 1 al 6 bajando por la derecha.
         var CENTER = { x: 320, y: 388 };
-        var SP_A = 4.53154, SP_B = -0.016184; // la espiral crece ×1.625 cada 30°
-        var PHI = { 1: 24, 2: 36, 3: 52, 4: 60, 5: 72, 6: 84,
-                    7: -153, 8: -143, 9: -132, 10: -121, 11: -110, 12: -99 };
+        var SP_A = 5.36, SP_B = -0.0053468; // espiral áurea: el radio crece ×φ cada 90° (~2.5 vueltas visibles)
+        var PHI = { 1: 60, 2: 64, 3: 68, 4: 72, 5: 76, 6: 80,
+                    7: -124, 8: -120, 9: -116, 10: -112, 11: -108, 12: -104 };
 
         function spiralR(thetaDeg) { return Math.exp(SP_A + SP_B * thetaDeg); }
         function polar(r, deg) {
@@ -634,7 +639,7 @@
             var rank = h <= 6 ? h - 1 : h - 7;
             // Marquita: un tramo corto de la propia espiral, desplazado
             // hacia fuera del número, para que siga su curvatura.
-            var fs = sizes[rank], Ls = 16 + 7.5 * rank, K = 1.364 * pos.rho / 180 * Math.PI;
+            var fs = sizes[rank], Ls = 22 + 7 * rank, K = 1.046 * pos.rho / 180 * Math.PI;
             var thH = pos.theta;
             var rot = (h - 1) * 30 - (h > 6 ? 360 : 0);
             var sp = function (th) { return polar(spiralR(th), th + rot); };
@@ -718,10 +723,10 @@
           // más grande que la placa) que se afina hasta enroscarse en
           // el centro. Se construye desplazando la curva a ambos lados
           // según su tangente, con el ancho creciendo con el radio.
-          var thMin = -79, thMax = 180;
+          var thMin = -87, thMax = 797;
           var Lf = [], Rt = [];
-          for (var j = 0; j <= 360; j++) {
-            var thj = thMin + (thMax - thMin) * j / 360, rj = spiralR(thj);
+          for (var j = 0; j <= 640; j++) {
+            var thj = thMin + (thMax - thMin) * j / 640, rj = spiralR(thj);
             var pa = polar(rj, thj), pb = polar(spiralR(thj + 0.4), thj + 0.4), pc = polar(spiralR(thj - 0.4), thj - 0.4);
             var tgx = pb.x - pc.x, tgy = pb.y - pc.y, tgl = Math.hypot(tgx, tgy) || 1;
             var wj = (2.4 + 9.5 * Math.pow(rj / 334, 0.85)) / 2;
@@ -751,17 +756,17 @@
           // ya no baje hasta el borde inferior, entre el 6 y su
           // línea. Las dos conservan su tramo junto a su número y
           // hasta el centro, igual que antes.
-          var thGMin = -96;
+          var thGMin = -136;
           for (var kk = 0; kk < 12; kk++) {
-            var thStart = (kk === 0 || kk === 6) ? -48 : thGMin;
+            var thStart = thGMin;
             var gd = "";
-            for (var m = 0; m <= 200; m++) {
-              var thg = thStart + (thMax - thStart) * m / 200, pg = polar(spiralR(thg), thg + kk * 30);
+            for (var m = 0; m <= 340; m++) {
+              var thg = thStart + (thMax - thStart) * m / 340, pg = polar(spiralR(thg), thg + kk * 30);
               gd += (m === 0 ? "M" : "L") + pg.x.toFixed(1) + " " + pg.y.toFixed(1);
             }
             var gp = document.createElementNS(NS, "path");
             gp.setAttribute("d", gd); gp.setAttribute("class", "ghost");
-            if (kk === 0) gp.setAttribute("clip-path", "url(#plateNoMoonClip)");
+            gp.setAttribute("clip-path", "url(#plateNoMoonClip)");
             gh.appendChild(gp);
           }
         })();
@@ -836,6 +841,23 @@
         }
 
         // Hora sidérea local; la longitud se estima de la zona horaria
+        var lastShadowMin = -1;
+        function sunAzAlt(sLon, lst) {
+          var eps = 23.4393 * RAD, lam = sLon * RAD, phi = 26.9 * RAD;
+          var dec = Math.asin(Math.sin(eps) * Math.sin(lam));
+          var ra = Math.atan2(Math.cos(eps) * Math.sin(lam), Math.cos(lam)) / RAD / 15;
+          var H = (((lst - ra + 36) % 24) - 12) * 15 * RAD;
+          var alt = Math.asin(Math.sin(phi) * Math.sin(dec) + Math.cos(phi) * Math.cos(dec) * Math.cos(H)) / RAD;
+          var az = Math.atan2(Math.sin(H), Math.cos(H) * Math.sin(phi) - Math.tan(dec) * Math.cos(phi));
+          return { alt: alt, az: az };
+        }
+        handsEl.addEventListener("pointermove", function (e) {
+          var r = handsEl.getBoundingClientRect();
+          handsEl.style.setProperty("--px", (((e.clientX - r.left) / r.width - 0.5) * 2).toFixed(2));
+          handsEl.style.setProperty("--py", (((e.clientY - r.top) / r.height - 0.5) * 2).toFixed(2));
+        });
+        handsEl.addEventListener("pointerleave", function () { handsEl.style.setProperty("--px", 0); handsEl.style.setProperty("--py", 0); });
+
         function lstHours(now, jd) {
           var gmst = (18.697374558 + 24.06570982441908 * (jd - 2451545.0)) % 24;
           var lonDeg = -now.getTimezoneOffset() * 0.25;
@@ -1017,6 +1039,15 @@
           // Aurora: sigue la oscuridad real (altura del Sol bajo el horizonte)
           var dark = Math.min(1, Math.max(0, (-sunAlt(sLon, lst) - 3) / 11));
           auroraEl.style.opacity = (dark * 0.9).toFixed(2);
+          var mk2 = Math.floor(+now / 60000);
+          if (mk2 !== lastShadowMin) {
+            lastShadowMin = mk2;
+            var sa = sunAzAlt(sLon, lst), up = Math.max(0, Math.sin(sa.alt * RAD)), low = 1 - up;
+            handsEl.style.setProperty("--sx", (-Math.sin(sa.az) * (4 + 14 * low)).toFixed(1) + "px");
+            handsEl.style.setProperty("--sy", (6 + 7 * low).toFixed(1) + "px");
+            handsEl.style.setProperty("--sb", (8 + 9 * low).toFixed(1) + "px");
+            handsEl.style.setProperty("--so", (sa.alt > 0 ? 0.4 + 0.25 * Math.min(1, up * 2) : 0.35).toFixed(2));
+          }
         }
 
         // El minutero también es una espiral áurea (r ×φ cada 90°): nace en el
