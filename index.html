@@ -325,7 +325,7 @@
         dominant-baseline: central;
       }
       .min-num { font-family: "Archivo", system-ui, sans-serif; font-weight: 600; fill: var(--p-dialnum); text-anchor: middle; dominant-baseline: alphabetic; paint-order: stroke; stroke: rgba(5, 5, 8, 0.9); stroke-width: 2.4; stroke-linejoin: round; }
-      .min-tick { fill: none; stroke: var(--p-tick); stroke-width: 2.2; stroke-linecap: round; opacity: 0.75; }
+      .min-tick { display: none; fill: none; stroke: var(--p-tick); stroke-width: 2.2; stroke-linecap: round; opacity: 0.75; }
       .min-num.on { fill: var(--p-hl); }
       .min-tick.on { stroke: var(--p-hl); stroke-width: 3; opacity: 1; }
       .plate-nums { transition: opacity 0.3s ease; }
@@ -343,10 +343,11 @@
         stroke-width: 3.2;
         stroke-linejoin: round;
       }
-      /* Carlos: solo los números visibles en la carátula; las marquitas
-         blancas de las horas se ocultan (los números quedan en su lugar
-         y se siguen encendiendo en rosa con .on). Las marcas de los
-         arcos de minutos (.min-tick) se quedan visibles. */
+      /* Carlos: solo los números visibles en la carátula; se ocultan
+         todas las marcas: las marquitas blancas de las horas
+         (.plate-tick) y las marcas de los arcos de minutos (.min-tick).
+         Los números quedan en su lugar y se siguen encendiendo en
+         rosa con .on (hora y minuto en curso). */
       .plate-tick { display: none; stroke: var(--p-tick); stroke-width: 5.4; stroke-linecap: round; }
       .plate-num.on { fill: var(--p-hl); }
       .plate-tick.on { stroke: var(--p-hl); stroke-width: 6.6; }
