@@ -466,52 +466,6 @@
       @media (prefers-reduced-motion: reduce) {
         .sq { transition: none; }
       }
-
-      /* ---------- Celular: la placa llena la pantalla ----------
-         En pantallas angostas casi no hay márgenes: la placa ocupa
-         casi todo el ancho (el JS recorta el viewBox al contorno de
-         la placa, sin el cielo vacío de los lados) y su alto llena
-         casi toda la pantalla. La hora digital y los botones se
-         reducen para que quepan debajo sin empujar el reloj. */
-      @media (max-width: 640px) {
-        main { padding: 0.35rem 0.15rem 1.25rem; }
-        .clock-frame { padding: 0.25rem; border-radius: 12px; }
-        .hands-wrap { padding: 0.1rem 0; border-radius: 10px; overflow: hidden; }
-        /* Cuadrados también del tamaño de la pantalla: sin el
-           tope de ancho de escritorio, ocupa todo el ancho, y la
-           rejilla se gira a vertical (5 columnas × 8 filas, la
-           misma teselación de Fibonacci transpuesta: el 5 arriba,
-           el 3 debajo a la izquierda, el 2 y los dos 1 a su lado),
-           para que también llene el alto del celular en vez de
-           quedar una franja horizontal pequeña en el centro. */
-        #squaresView { padding: 0.4rem; border-radius: 10px; max-width: none; margin-inline: 0; }
-        #squaresView .clock {
-          grid-template-columns: repeat(5, 1fr);
-          grid-template-rows: repeat(8, 1fr);
-          aspect-ratio: 5 / 8;
-          gap: 6px;
-        }
-        #squaresView .sq5 { grid-area: 1 / 1 / 6 / 6; }
-        #squaresView .sq3 { grid-area: 6 / 1 / 9 / 4; }
-        #squaresView .sq2 { grid-area: 6 / 4 / 8 / 6; }
-        #squaresView .sq1a { grid-area: 8 / 4 / 9 / 5; }
-        #squaresView .sq1b { grid-area: 8 / 5 / 9 / 6; }
-        #squaresView .sq5 .num { font-size: 3rem; }
-        #squaresView .sq3 .num { font-size: 2.1rem; }
-        #squaresView .sq2 .num { font-size: 1.5rem; }
-        #squaresView .sq1 .num { font-size: 1rem; }
-        .readout { margin-top: 0.55rem; gap: 0.2rem 0.7rem; }
-        .digital { font-size: 1.5rem; }
-        .dateline { font-size: 0.8rem; }
-        .breakdown { margin-top: 0.55rem; gap: 0.35rem; }
-        .chip { font-size: 0.75rem; padding: 0.28rem 0.5rem; }
-        .controls { margin-top: 0.6rem; gap: 0.35rem; }
-        .btn { font-size: 0.72rem; padding: 0.18rem 0.55rem; min-height: 1.7rem; }
-        .read-hint { font-size: 0.72rem; margin-top: 0.55rem; }
-        .install-panel { margin-top: 0.7rem; padding: 0.7rem 0.8rem; font-size: 0.82rem; }
-        .install-note { font-size: 0.8rem; margin-top: 0.6rem; }
-        footer { margin-top: 1.5rem; }
-      }
     </style>
   </head>
   <body>
@@ -1268,26 +1222,6 @@
           clockEl.classList.toggle("hide-nums", on);
           handsEl.classList.toggle("hide-nums", on);
         });
-
-        // En el celular la placa se veía chica en el centro: el
-        // viewBox completo (-28 -20 696 796) deja la placa (360 de
-        // ancho) en apenas la mitad del panel, rodeada de cielo
-        // vacío. En pantallas angostas se recorta el viewBox al
-        // contorno de la placa, con un margen corto a cada lado,
-        // para que la placa ocupe casi todo el ancho y el reloj
-        // quede del tamaño de la pantalla; la punta de la espiral
-        // se sale por los lados del recorte, como ya hacía sobre
-        // el fondo. En pantallas anchas se restaura el viewBox
-        // completo, con su cielo alrededor.
-        var PLATE_VB_FULL = "-28 -20 696 796";
-        var PLATE_VB_MOBILE = "106 -10 428 780";
-        function fitPlate() {
-          var mobile = window.innerWidth <= 640;
-          plateEl.setAttribute("viewBox", mobile ? PLATE_VB_MOBILE : PLATE_VB_FULL);
-        }
-        fitPlate();
-        window.addEventListener("resize", fitPlate);
-        window.addEventListener("orientationchange", fitPlate);
 
         tick();
         setInterval(tick, 500);
