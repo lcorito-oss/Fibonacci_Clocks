@@ -343,7 +343,11 @@
         stroke-width: 3.2;
         stroke-linejoin: round;
       }
-      .plate-tick { stroke: var(--p-tick); stroke-width: 5.4; stroke-linecap: round; }
+      /* Carlos: solo los números visibles en la carátula; las marquitas
+         blancas de las horas se ocultan (los números quedan en su lugar
+         y se siguen encendiendo en rosa con .on). Las marcas de los
+         arcos de minutos (.min-tick) se quedan visibles. */
+      .plate-tick { display: none; stroke: var(--p-tick); stroke-width: 5.4; stroke-linecap: round; }
       .plate-num.on { fill: var(--p-hl); }
       .plate-tick.on { stroke: var(--p-hl); stroke-width: 6.6; }
 
@@ -631,7 +635,7 @@
         <button class="btn primary" id="btnInstall" hidden>Instalar el reloj</button>
       </div>
 
-      <p class="read-hint" id="readHint">La espiral cruza el número de la hora en curso, que se enciende en rosa igual que su marquita. La manecilla del centro marca los minutos.</p>
+      <p class="read-hint" id="readHint">La espiral cruza el número de la hora en curso, que se enciende en rosa. La manecilla del centro marca los minutos.</p>
 
       <div class="install-panel" id="installPanel" hidden>
         <h2>Instalar en este dispositivo</h2>
@@ -1378,7 +1382,7 @@
           btnViewHands.setAttribute("aria-pressed", hands ? "true" : "false");
           syncViewSwitch();
           readHintEl.textContent = hands
-            ? "La espiral cruza el número de la hora en curso, que se enciende en rosa igual que su marquita. La manecilla del centro marca los minutos."
+            ? "La espiral cruza el número de la hora en curso, que se enciende en rosa. La manecilla del centro marca los minutos."
             : "Suma los rojos y azules para la hora; los verdes y azules, por 5, dan los minutos.";
           if (mode === "live") tick();
           else if (lastShown) render(lastShown.h, lastShown.mUnits);
