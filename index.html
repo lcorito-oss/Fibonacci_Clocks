@@ -256,6 +256,17 @@
       .hands-wrap[data-material="negro"] .spiral-arm { stroke: #e7e9ee; }
       .hands-wrap[data-material="negro"] .spiral-out { stroke: #101014; opacity: calc(1 - var(--night, 1)); }
 
+      /* ---------- Espiral como figura ---------- */
+      .spiral-arm { fill: #101014; stroke: none; }
+      .spiral-out { fill: #e7e9ee; stroke: none; }
+      .hands-wrap[data-material="negro"] .spiral-arm { fill: #e7e9ee; stroke: none; }
+      .hands-wrap[data-material="negro"] .spiral-out { fill: #101014; stroke: none; }
+      .ghost { fill: none; stroke: #16161a; stroke-width: 1; opacity: 0.2; }
+      .hands-wrap[data-material="madera"] .ghost { stroke: #4b3420; opacity: 0.32; }
+      .hands-wrap[data-material="negro"] .ghost { stroke: #eceef3; opacity: 0.22; }
+      .plate-tick.on { stroke: #d4261c; stroke-width: 4.2; }
+      .hub-dot { stroke-width: 0.8; }
+
       /* ---------- Lectura digital y desglose ---------- */
       .readout {
         display: flex;
@@ -452,15 +463,16 @@
             </defs>
             <rect class="plate-body" x="190" y="30" width="260" height="660" rx="10" fill="url(#plateGrad)"></rect>
             <g id="skyLayer" clip-path="url(#plateClip)"></g>
+            <g id="ghosts" clip-path="url(#plateClip)"></g>
             <g id="plateNums" class="plate-nums"></g>
             <g id="minuteDial"></g>
             <g class="cast">
               <g class="par"><g id="spiralArm"><path class="spiral-arm" id="spiralPath" d=""></path></g></g>
               <g clip-path="url(#outsideClip)"><g class="par"><g id="spiralArm2"><path class="spiral-out" id="spiralPathOut" d=""></path></g></g></g>
             </g>
-            <g id="handMinute"><polygon class="hand-min" points="320,306 323.2,354 320,378 316.8,354"></polygon></g>
-            <circle class="hub" cx="320" cy="360" r="17"></circle>
-            <circle class="hub-dot" cx="320" cy="360" r="6"></circle>
+            <g id="handMinute"><polygon class="hand-min" points="320,308 321.9,356 320,372 318.1,356"></polygon></g>
+            <circle class="hub" cx="320" cy="360" r="5.5"></circle>
+            <circle class="hub-dot" cx="320" cy="360" r="2"></circle>
           </svg>
         </div>
       </div>
@@ -590,7 +602,7 @@
         var btnViewHands = document.getElementById("btnViewHands");
         var btnNums = document.getElementById("btnNums");
         var scrub = document.getElementById("scrub");
-        var plateNumEls = {};
+        var plateNumEls = {}, plateTickEls = {};
         var btnMat = document.getElementById("btnMat");
 
         var mode = "live";           // "live" | "practice"
@@ -660,6 +672,7 @@
             tick.setAttribute("class", "plate-tick");
             tick.setAttribute("fill", "none");
             numsG.appendChild(tick);
+            plateTickEls[h] = tick;
             var t = document.createElementNS(NS, "text");
             t.setAttribute("x", numX.toFixed(1));
             t.setAttribute("y", numY.toFixed(1));
@@ -711,6 +724,29 @@
             var th = thMin + (thMax - thMin) * i / steps;
             var pt2 = polar(spiralR(th), th);
             d += (i === 0 ? "M" : "L") + pt2.x.toFixed(1) + " " + pt2.y.toFixed(1);
+          }
+          // La espiral como figura: una cinta ancha afuera que se afina hasta
+          // enroscarse en el buje. Y las 12 espirales de las horas, grabadas.
+          var Lf = [], Rt = [];
+          for (var j = 0; j <= 360; j++) {
+            var thj = thMin + (thMax - thMin) * j / 360, rj = spiralR(thj);
+            var pa = polar(rj, thj), pb = polar(spiralR(thj + 0.4), thj + 0.4), pc = polar(spiralR(thj - 0.4), thj - 0.4);
+            var tgx = pb.x - pc.x, tgy = pb.y - pc.y, tgl = Math.hypot(tgx, tgy) || 1;
+            var wj = (2.4 + 9.5 * Math.pow(rj / 334, 0.85)) / 2;
+            Lf.push((pa.x - tgy / tgl * wj).toFixed(1) + " " + (pa.y + tgx / tgl * wj).toFixed(1));
+            Rt.push((pa.x + tgy / tgl * wj).toFixed(1) + " " + (pa.y - tgx / tgl * wj).toFixed(1));
+          }
+          d = "M" + Lf.join("L") + "L" + Rt.reverse().join("L") + "Z";
+          var gh = document.getElementById("ghosts");
+          for (var kk = 0; kk < 12; kk++) {
+            var gd = "";
+            for (var m = 0; m <= 160; m++) {
+              var thg = thMin + (thMax - thMin) * m / 160, pg = polar(spiralR(thg), thg + kk * 30);
+              gd += (m === 0 ? "M" : "L") + pg.x.toFixed(1) + " " + pg.y.toFixed(1);
+            }
+            var gp = document.createElementNS(NS, "path");
+            gp.setAttribute("d", gd); gp.setAttribute("class", "ghost");
+            gh.appendChild(gp);
           }
           document.getElementById("spiralPath").setAttribute("d", d);
           document.getElementById("spiralPathOut").setAttribute("d", d);
@@ -1031,7 +1067,7 @@
         }
 
         function markHour(h) {
-          for (var k in plateNumEls) plateNumEls[k].classList.toggle("on", +k === h);
+          for (var k in plateNumEls) { plateNumEls[k].classList.toggle("on", +k === h); plateTickEls[k].classList.toggle("on", +k === h); }
         }
 
         function render(h12, mUnits) {
