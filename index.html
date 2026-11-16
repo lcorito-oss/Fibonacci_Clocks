@@ -324,13 +324,14 @@
         text-anchor: middle;
         dominant-baseline: central;
       }
-      .min-num { font-family: "Archivo", system-ui, sans-serif; font-weight: 600; fill: var(--p-dialnum); text-anchor: middle; dominant-baseline: alphabetic; paint-order: stroke; stroke: rgba(5, 5, 8, 0.9); stroke-width: 2.4; stroke-linejoin: round; }
-      .min-tick { display: none; fill: none; stroke: var(--p-tick); stroke-width: 2.2; stroke-linecap: round; opacity: 0.75; }
-      .min-num.on { fill: var(--p-hl); }
+      .min-num { display: none; font-family: "Archivo", system-ui, sans-serif; font-weight: 600; fill: var(--p-dialnum); text-anchor: middle; dominant-baseline: alphabetic; paint-order: stroke; stroke: rgba(5, 5, 8, 0.9); stroke-width: 2.4; stroke-linejoin: round; }
+      .min-tick { fill: none; stroke: var(--p-tick); stroke-width: 2.2; stroke-linecap: round; opacity: 0.75; }
+      .min-num.on { display: inline; fill: var(--p-hl); }
       .min-tick.on { stroke: var(--p-hl); stroke-width: 3; opacity: 1; }
       .plate-nums { transition: opacity 0.3s ease; }
       .hide-nums .plate-nums { opacity: 0; }
       .plate-num {
+        display: none;
         font-family: "Archivo", system-ui, sans-serif;
         font-weight: 700;
         fill: var(--p-num);
@@ -343,13 +344,12 @@
         stroke-width: 3.2;
         stroke-linejoin: round;
       }
-      /* Carlos: solo los números visibles en la carátula; se ocultan
-         todas las marcas: las marquitas blancas de las horas
-         (.plate-tick) y las marcas de los arcos de minutos (.min-tick).
-         Los números quedan en su lugar y se siguen encendiendo en
-         rosa con .on (hora y minuto en curso). */
-      .plate-tick { display: none; stroke: var(--p-tick); stroke-width: 5.4; stroke-linecap: round; }
-      .plate-num.on { fill: var(--p-hl); }
+      /* Carlos: se ocultan los números y se dejan las marcas: las
+         marquitas blancas de las horas (.plate-tick) y las marcas de
+         los arcos de minutos (.min-tick) quedan visibles, y el
+         resaltado en rosa va en las marcas (hora y minuto en curso). */
+      .plate-tick { stroke: var(--p-tick); stroke-width: 5.4; stroke-linecap: round; }
+      .plate-num.on { display: inline; fill: var(--p-hl); }
       .plate-tick.on { stroke: var(--p-hl); stroke-width: 6.6; }
 
       /* ---------- Lectura digital y desglose ---------- */
@@ -636,7 +636,7 @@
         <button class="btn primary" id="btnInstall" hidden>Instalar el reloj</button>
       </div>
 
-      <p class="read-hint" id="readHint">La espiral cruza el número de la hora en curso, que se enciende en rosa. La manecilla del centro marca los minutos.</p>
+      <p class="read-hint" id="readHint">La espiral cruza la marca de la hora en curso, que se enciende en rosa. La manecilla del centro marca los minutos.</p>
 
       <div class="install-panel" id="installPanel" hidden>
         <h2>Instalar en este dispositivo</h2>
@@ -685,8 +685,8 @@
         // La placa sigue el diseño de la imagen de referencia: las 12
         // espirales finas grabadas sobre toda la placa y la espiral
         // principal como figura —una cinta que gira una vuelta cada
-        // 12 horas y cruza el número de la hora en curso—, que se
-        // enciende en rosa igual que su marquita.
+        // 12 horas y cruza la marca de la hora en curso—, que se
+        // enciende en rosa.
         // La geometría de los números sigue siendo la de la espiral
         // logarítmica: cada número está en el ángulo PHI[h], a la
         // distancia a la que la espiral lo cruzaría a su hora.
@@ -1383,7 +1383,7 @@
           btnViewHands.setAttribute("aria-pressed", hands ? "true" : "false");
           syncViewSwitch();
           readHintEl.textContent = hands
-            ? "La espiral cruza el número de la hora en curso, que se enciende en rosa. La manecilla del centro marca los minutos."
+            ? "La espiral cruza la marca de la hora en curso, que se enciende en rosa. La manecilla del centro marca los minutos."
             : "Suma los rojos y azules para la hora; los verdes y azules, por 5, dan los minutos.";
           if (mode === "live") tick();
           else if (lastShown) render(lastShown.h, lastShown.mUnits);
