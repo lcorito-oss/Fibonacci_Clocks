@@ -205,26 +205,6 @@
         --p-star3: #6d5a33;
         --p-ghostop: 0.2;
       }
-      .hands-wrap[data-material="cobre"] {
-        --p-num: #2e1a06;
-        --p-spiral: #2a1503;
-        --p-min: #2e1a06;
-        --p-tick: #2e1a06;
-        --p-dial: rgba(46, 26, 6, 0.45);
-        --p-dialnum: rgba(46, 26, 6, 0.55);
-        --p-ecl: rgba(46, 26, 6, 0.22);
-        --p-dialface: rgba(255, 244, 230, 0.3);
-        --p-dialring: rgba(46, 26, 6, 0.62);
-        --p-label: #3a2208;
-        --p-moonsh: #6b4a2a;
-        --p-rim: rgba(46, 26, 6, 0.45);
-        --p-bstroke: rgba(60, 32, 8, 0.55);
-        --p-hl: #c2185b;
-        --p-star1: #4a2c10;
-        --p-star2: #274035;
-        --p-star3: #6e5320;
-        --p-ghostop: 0.32;
-      }
       /* Cielo estrellado de fondo, detrás de la placa */
       #bgStars {
         position: absolute;
@@ -237,7 +217,10 @@
       .moon-smoke { fill: rgba(14, 16, 24, 0.66); filter: url(#smokeBlur); }
       .moon-smoke2 { fill: rgba(148, 160, 190, 0.20); filter: url(#smokeBlur2); }
       .hands-wrap[data-material="negro"] {
-        --p-num: #ece9e0;
+        /* Los números van en ámbar, distinto del blanco de la espiral
+           y de las líneas, para que se lean también cuando la espiral
+           pasa por detrás de ellos. */
+        --p-num: #f5b942;
         --p-spiral: #e8e6df;
         --p-min: #cfccc2;
         --p-tick: #ece9e0;
@@ -337,18 +320,22 @@
       }
       .plate-nums { transition: opacity 0.3s ease; }
       .hide-nums .plate-nums { opacity: 0; }
-      #longLines { transition: opacity 0.3s ease; }
-      .hide-nums #longLines { opacity: 0; }
       .plate-num {
         font-family: "Archivo", system-ui, sans-serif;
         font-weight: 700;
         fill: var(--p-num);
         text-anchor: middle;
         dominant-baseline: central;
+        /* Halo oscuro alrededor de cada número: aunque la espiral
+           blanca pase justo por detrás, el número nunca se pierde. */
+        paint-order: stroke;
+        stroke: rgba(5, 5, 8, 0.92);
+        stroke-width: 3.2;
+        stroke-linejoin: round;
       }
-      .plate-tick { stroke: var(--p-tick); stroke-width: 3.2; stroke-linecap: round; }
+      .plate-tick { stroke: var(--p-tick); stroke-width: 5.4; stroke-linecap: round; }
       .plate-num.on { fill: var(--p-hl); }
-      .plate-tick.on { stroke: var(--p-hl); stroke-width: 4.4; }
+      .plate-tick.on { stroke: var(--p-hl); stroke-width: 6.6; }
 
       /* ---------- Lectura digital y desglose ---------- */
       .readout {
@@ -497,19 +484,6 @@
           <svg id="bgStars" viewBox="0 0 800 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
           <svg class="plate" id="plateSvg" viewBox="-28 -20 696 796" role="img" aria-label="Reloj de placa negra con espiral de Fibonacci">
             <defs>
-              <linearGradient id="plateGrad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0" stop-color="#f4f4f6"></stop>
-                <stop offset="0.45" stop-color="#cfcfd5"></stop>
-                <stop offset="0.75" stop-color="#e6e6ea"></stop>
-                <stop offset="1" stop-color="#b9b9c1"></stop>
-              </linearGradient>
-              <linearGradient id="copperGrad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0" stop-color="#f2b183"></stop>
-                <stop offset="0.35" stop-color="#cf8347"></stop>
-                <stop offset="0.6" stop-color="#b06a30"></stop>
-                <stop offset="0.85" stop-color="#8f5222"></stop>
-                <stop offset="1" stop-color="#74400f"></stop>
-              </linearGradient>
               <filter id="smokeBlur" x="-40%" y="-40%" width="180%" height="180%">
                 <feGaussianBlur stdDeviation="2.2"></feGaussianBlur>
               </filter>
@@ -527,15 +501,17 @@
               <clipPath id="outsideClip"><path clip-rule="evenodd" d="M-200 -200H900V1100H-200Z M154 28H486Q500 28 500 42V734Q500 748 486 748H154Q140 748 140 734V42Q140 28 154 28Z"></path></clipPath>
             </defs>
             <rect class="plate-body" id="plateBody" x="140" y="28" width="360" height="720" rx="14" fill="url(#blackGrad)"></rect>
-            <g id="longLines" clip-path="url(#plateClip)"></g>
-            <g id="skyLayer" clip-path="url(#plateClip)"></g>
-            <g id="ghosts" clip-path="url(#plateClip)"></g>
-            <g id="plateNums" class="plate-nums"></g>
-            <g id="minuteDial"></g>
+            <!-- La espiral va siempre por detrás de todo lo demás de la
+                 placa —números, marquitas, Luna y carátula de minutos—,
+                 para que al pasar sobre un número nunca lo oculte. -->
             <g class="cast">
               <g id="spiralArm"><path class="spiral-arm" id="spiralPath" d=""></path></g>
               <g clip-path="url(#outsideClip)"><g id="spiralArm2"><path class="spiral-out" id="spiralPathOut" d=""></path></g></g>
             </g>
+            <g id="skyLayer" clip-path="url(#plateClip)"></g>
+            <g id="ghosts" clip-path="url(#plateClip)"></g>
+            <g id="plateNums" class="plate-nums"></g>
+            <g id="minuteDial"></g>
             <g id="handMinute"><polygon class="hand-min" points="320,346 321.5,384 320,398 318.5,384"></polygon></g>
             <circle class="hub" cx="320" cy="388" r="2.6"></circle>
             <circle class="hub-dot" cx="320" cy="388" r="1"></circle>
@@ -560,9 +536,6 @@
         <button class="btn" id="btnReveal" hidden>Revelar la hora</button>
         <button class="btn" id="btnViewSq" aria-pressed="false">Cuadrados</button>
         <button class="btn" id="btnViewHands" aria-pressed="true">Manecillas</button>
-        <button class="btn" id="btnMatCopper" aria-pressed="false">Cobre</button>
-        <button class="btn" id="btnMatSilver" aria-pressed="false">Plata</button>
-        <button class="btn" id="btnMatBlack" aria-pressed="true">Negro</button>
         <button class="btn" id="btnNums" aria-pressed="true">Números visibles</button>
         <button class="btn primary" id="btnInstall" hidden>Instalar el reloj</button>
       </div>
@@ -602,11 +575,6 @@
         var btnViewSq = document.getElementById("btnViewSq");
         var btnViewHands = document.getElementById("btnViewHands");
         var btnNums = document.getElementById("btnNums");
-        var btnMatCopper = document.getElementById("btnMatCopper");
-        var btnMatSilver = document.getElementById("btnMatSilver");
-        var btnMatBlack = document.getElementById("btnMatBlack");
-        var matBtns = [btnMatCopper, btnMatSilver, btnMatBlack];
-        var plateBodyEl = document.getElementById("plateBody");
         var readHintEl = document.getElementById("readHint");
 
         var mode = "live";           // "live" | "practice"
@@ -658,7 +626,6 @@
         (function buildPlate() {
           var NS = "http://www.w3.org/2000/svg";
           var numsG = document.getElementById("plateNums");
-          var longG = document.getElementById("longLines");
           var sizes = [18, 20, 23, 26, 29, 33]; // crece al alejarse del centro
           for (var h = 1; h <= 12; h++) {
             var pos = hourPos(h);
@@ -675,34 +642,16 @@
               td += (i === 0 ? "M" : "L") + q.x.toFixed(1) + " " + q.y.toFixed(1);
             }
             var tick = document.createElementNS(NS, "path");
-            // Las líneas del 12 y de la 1 van del largo del contenedor:
-            // su marquita se prolonga siguiendo la misma espiral hacia
-            // fuera hasta llegar al borde de la placa. Van en su propia
-            // capa, detrás del cielo, para que la del 1 pase por detrás
-            // de la Luna y no sobre ella. El número se queda donde
-            // estaba, junto al tramo corto de siempre.
-            if (h === 12 || h === 1) {
-              var ext = [];
-              for (var e = 0; e <= 420; e++) {
-                var qe = sp(thH - Ls / K - e * 0.5);
-                if (qe.x < 143 || qe.x > 497 || qe.y < 31 || qe.y > 745) break;
-                ext.push(qe);
-              }
-              var ld = "";
-              for (var ei = ext.length - 1; ei >= 0; ei--) {
-                ld += (ld ? "L" : "M") + ext[ei].x.toFixed(1) + " " + ext[ei].y.toFixed(1);
-              }
-              ld += td.replace(/^M/, "L");
-              tick.setAttribute("d", ld);
-              tick.setAttribute("class", "plate-tick");
-              tick.setAttribute("fill", "none");
-              longG.appendChild(tick);
-            } else {
-              tick.setAttribute("d", td);
-              tick.setAttribute("class", "plate-tick");
-              tick.setAttribute("fill", "none");
-              numsG.appendChild(tick);
-            }
+            // Todas las horas llevan la misma marquita corta, también
+            // la 1 y las 12: antes su línea se prolongaba del largo del
+            // contenedor y quedaba mal —cruzaba la placa entera, pasaba
+            // sobre la Luna y se perdía entre las demás curvas—. Ahora
+            // es el tramo corto de siempre, junto a su número, en la
+            // capa de los números (por encima de la espiral).
+            tick.setAttribute("d", td);
+            tick.setAttribute("class", "plate-tick");
+            tick.setAttribute("fill", "none");
+            numsG.appendChild(tick);
             plateTickEls[h] = tick;
             // Todos los números, del 1 al 12, van del lado derecho de
             // su línea blanca, igual que ya iban los del 1 al 6: a la
@@ -1227,18 +1176,9 @@
           else tick();
         }
 
-        // Selector de material de la placa: cobre, plata o negro.
-        // Cambia el degradado del cuerpo y la paleta de todo lo grabado
-        // (números, espirales, cielo) vía data-material + variables CSS.
-        var MAT_GRADS = { cobre: "copperGrad", plata: "plateGrad", negro: "blackGrad" };
-        function setMaterial(name) {
-          handsEl.setAttribute("data-material", name);
-          plateBodyEl.setAttribute("fill", "url(#" + MAT_GRADS[name] + ")");
-          btnMatCopper.setAttribute("aria-pressed", name === "cobre" ? "true" : "false");
-          btnMatSilver.setAttribute("aria-pressed", name === "plata" ? "true" : "false");
-          btnMatBlack.setAttribute("aria-pressed", name === "negro" ? "true" : "false");
-          plateEl.setAttribute("aria-label", "Reloj de placa de " + name + " con espiral de Fibonacci");
-        }
+        // La placa es siempre negra: ya no hay selector de material
+        // (fuera cobre y plata); el degradado blackGrad y la paleta
+        // data-material="negro" quedan fijos en el marcado.
 
         function setView(next) {
           view = next;
@@ -1246,7 +1186,6 @@
           squaresEl.hidden = hands;
           handsEl.hidden = !hands;
           breakdownEl.hidden = hands; // las fichas de Horas y Minutos solo van con los cuadrados
-          matBtns.forEach(function (b) { b.hidden = !hands; }); // el material solo aplica a la placa
           btnViewSq.setAttribute("aria-pressed", hands ? "false" : "true");
           btnViewHands.setAttribute("aria-pressed", hands ? "true" : "false");
           readHintEl.textContent = hands
@@ -1262,9 +1201,6 @@
         btnReveal.addEventListener("click", revealPractice);
         btnViewSq.addEventListener("click", function () { setView("squares"); });
         btnViewHands.addEventListener("click", function () { setView("hands"); });
-        btnMatCopper.addEventListener("click", function () { setMaterial("cobre"); });
-        btnMatSilver.addEventListener("click", function () { setMaterial("plata"); });
-        btnMatBlack.addEventListener("click", function () { setMaterial("negro"); });
         btnNums.addEventListener("click", function () {
           var on = btnNums.getAttribute("aria-pressed") === "true";
           btnNums.setAttribute("aria-pressed", on ? "false" : "true");
@@ -1284,8 +1220,8 @@
       // permite, se registra con el ámbito por defecto del archivo.
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", function () {
-          navigator.serviceWorker.register("data:application/javascript;base64,LyogUmVsb2ogZGUgRmlib25hY2NpIOKAlCBzZXJ2aWNlIHdvcmtlcjogZ3VhcmRhIGxhIHDDoWdpbmEsIHN1cyBpY29ub3MgeQogICBsYSBmb3RvIGRlIGxhIEx1bmEgcGFyYSBxdWUgZWwgcmVsb2ogYWJyYSBzaW4gY29uZXhpw7NuIHRyYXMgbGEKICAgcHJpbWVyYSB2aXNpdGEsIHlhIGluc3RhbGFkbyBvIGVuIGVsIG5hdmVnYWRvci4gKi8KdmFyIENBQ0hFID0gInJlbG9qLWZpYm9uYWNjaS12NSI7CnZhciBJTkRFWCA9ICIuLi9pbmRleC5odG1sIjsKdmFyIFBSRUNBQ0hFID0gWwogICIuLi9pbmRleC5odG1sIiwKICAiLi9tYW5pZmVzdC53ZWJtYW5pZmVzdCIsCiAgIi4vYnJvd3NlcmNvbmZpZy54bWwiLAogICIuL21vb24tc3VyZmFjZS5wbmciLAogICIuL2ljb24tMTQ0LnBuZyIsCiAgIi4vaWNvbi0xOTIucG5nIiwKICAiLi9pY29uLTI1Ni5wbmciLAogICIuL2ljb24tMzg0LnBuZyIsCiAgIi4vaWNvbi01MTIucG5nIiwKICAiLi9pY29uLW1hc2thYmxlLTUxMi5wbmciLAogICIuL2FwcGxlLXRvdWNoLWljb24ucG5nIiwKICAiLi9hcHBsZS10b3VjaC1pY29uLTEyMC5wbmciLAogICIuL2FwcGxlLXRvdWNoLWljb24tMTUyLnBuZyIsCiAgIi4vYXBwbGUtdG91Y2gtaWNvbi0xNjcucG5nIiwKICAiLi9mYXZpY29uLTE2LnBuZyIsCiAgIi4vZmF2aWNvbi0zMi5wbmciLAogICIuL2Zhdmljb24tNDgucG5nIiwKICAiLi9mYXZpY29uLmljbyIsCiAgIi4vbXN0aWxlLTE1MC5wbmciCl07CgpzZWxmLmFkZEV2ZW50TGlzdGVuZXIoImluc3RhbGwiLCBmdW5jdGlvbiAoZXZlbnQpIHsKICBldmVudC53YWl0VW50aWwoCiAgICBjYWNoZXMub3BlbihDQUNIRSkudGhlbihmdW5jdGlvbiAoY2FjaGUpIHsKICAgICAgcmV0dXJuIGNhY2hlLmFkZEFsbChQUkVDQUNIRSk7CiAgICB9KS50aGVuKGZ1bmN0aW9uICgpIHsgcmV0dXJuIHNlbGYuc2tpcFdhaXRpbmcoKTsgfSkKICApOwp9KTsKCnNlbGYuYWRkRXZlbnRMaXN0ZW5lcigiYWN0aXZhdGUiLCBmdW5jdGlvbiAoZXZlbnQpIHsKICBldmVudC53YWl0VW50aWwoCiAgICBjYWNoZXMua2V5cygpLnRoZW4oZnVuY3Rpb24gKGtleXMpIHsKICAgICAgcmV0dXJuIFByb21pc2UuYWxsKGtleXMubWFwKGZ1bmN0aW9uIChrKSB7CiAgICAgICAgcmV0dXJuIGsgPT09IENBQ0hFID8gbnVsbCA6IGNhY2hlcy5kZWxldGUoayk7CiAgICAgIH0pKTsKICAgIH0pLnRoZW4oZnVuY3Rpb24gKCkgeyByZXR1cm4gc2VsZi5jbGllbnRzLmNsYWltKCk7IH0pCiAgKTsKfSk7CgpzZWxmLmFkZEV2ZW50TGlzdGVuZXIoImZldGNoIiwgZnVuY3Rpb24gKGV2ZW50KSB7CiAgaWYgKGV2ZW50LnJlcXVlc3QubWV0aG9kICE9PSAiR0VUIikgcmV0dXJuOwogIGV2ZW50LnJlc3BvbmRXaXRoKAogICAgY2FjaGVzLm1hdGNoKGV2ZW50LnJlcXVlc3QsIHsgaWdub3JlU2VhcmNoOiB0cnVlIH0pLnRoZW4oZnVuY3Rpb24gKGhpdCkgewogICAgICBpZiAoaGl0KSByZXR1cm4gaGl0OwogICAgICByZXR1cm4gZmV0Y2goZXZlbnQucmVxdWVzdCkudGhlbihmdW5jdGlvbiAocmVzKSB7CiAgICAgICAgaWYgKHJlcyAmJiByZXMub2sgJiYgbmV3IFVSTChldmVudC5yZXF1ZXN0LnVybCkub3JpZ2luID09PSBzZWxmLmxvY2F0aW9uLm9yaWdpbikgewogICAgICAgICAgdmFyIGNvcHkgPSByZXMuY2xvbmUoKTsKICAgICAgICAgIGNhY2hlcy5vcGVuKENBQ0hFKS50aGVuKGZ1bmN0aW9uIChjYWNoZSkgeyBjYWNoZS5wdXQoZXZlbnQucmVxdWVzdCwgY29weSk7IH0pOwogICAgICAgIH0KICAgICAgICByZXR1cm4gcmVzOwogICAgICB9KS5jYXRjaChmdW5jdGlvbiAoKSB7CiAgICAgICAgLy8gU2luIGNvbmV4acOzbiB5IHNpbiBjb3BpYSBkZWwgcmVjdXJzbzogc2kgZXJhIHVuYSBuYXZlZ2FjacOzbiwKICAgICAgICAvLyBzZSBzaXJ2ZSBsYSBww6FnaW5hIGd1YXJkYWRhIHBhcmEgcXVlIGVsIHJlbG9qIHNpZ2EgYWJyaWVuZG8uCiAgICAgICAgaWYgKGV2ZW50LnJlcXVlc3QubW9kZSA9PT0gIm5hdmlnYXRlIikgewogICAgICAgICAgcmV0dXJuIGNhY2hlcy5tYXRjaChJTkRFWCwgeyBpZ25vcmVTZWFyY2g6IHRydWUgfSk7CiAgICAgICAgfQogICAgICAgIHJldHVybiBSZXNwb25zZS5lcnJvcigpOwogICAgICB9KTsKICAgIH0pCiAgKTsKfSk7Cg==", { scope: "./" })
-            .catch(function () { return navigator.serviceWorker.register("data:application/javascript;base64,LyogUmVsb2ogZGUgRmlib25hY2NpIOKAlCBzZXJ2aWNlIHdvcmtlcjogZ3VhcmRhIGxhIHDDoWdpbmEsIHN1cyBpY29ub3MgeQogICBsYSBmb3RvIGRlIGxhIEx1bmEgcGFyYSBxdWUgZWwgcmVsb2ogYWJyYSBzaW4gY29uZXhpw7NuIHRyYXMgbGEKICAgcHJpbWVyYSB2aXNpdGEsIHlhIGluc3RhbGFkbyBvIGVuIGVsIG5hdmVnYWRvci4gKi8KdmFyIENBQ0hFID0gInJlbG9qLWZpYm9uYWNjaS12NSI7CnZhciBJTkRFWCA9ICIuLi9pbmRleC5odG1sIjsKdmFyIFBSRUNBQ0hFID0gWwogICIuLi9pbmRleC5odG1sIiwKICAiLi9tYW5pZmVzdC53ZWJtYW5pZmVzdCIsCiAgIi4vYnJvd3NlcmNvbmZpZy54bWwiLAogICIuL21vb24tc3VyZmFjZS5wbmciLAogICIuL2ljb24tMTQ0LnBuZyIsCiAgIi4vaWNvbi0xOTIucG5nIiwKICAiLi9pY29uLTI1Ni5wbmciLAogICIuL2ljb24tMzg0LnBuZyIsCiAgIi4vaWNvbi01MTIucG5nIiwKICAiLi9pY29uLW1hc2thYmxlLTUxMi5wbmciLAogICIuL2FwcGxlLXRvdWNoLWljb24ucG5nIiwKICAiLi9hcHBsZS10b3VjaC1pY29uLTEyMC5wbmciLAogICIuL2FwcGxlLXRvdWNoLWljb24tMTUyLnBuZyIsCiAgIi4vYXBwbGUtdG91Y2gtaWNvbi0xNjcucG5nIiwKICAiLi9mYXZpY29uLTE2LnBuZyIsCiAgIi4vZmF2aWNvbi0zMi5wbmciLAogICIuL2Zhdmljb24tNDgucG5nIiwKICAiLi9mYXZpY29uLmljbyIsCiAgIi4vbXN0aWxlLTE1MC5wbmciCl07CgpzZWxmLmFkZEV2ZW50TGlzdGVuZXIoImluc3RhbGwiLCBmdW5jdGlvbiAoZXZlbnQpIHsKICBldmVudC53YWl0VW50aWwoCiAgICBjYWNoZXMub3BlbihDQUNIRSkudGhlbihmdW5jdGlvbiAoY2FjaGUpIHsKICAgICAgcmV0dXJuIGNhY2hlLmFkZEFsbChQUkVDQUNIRSk7CiAgICB9KS50aGVuKGZ1bmN0aW9uICgpIHsgcmV0dXJuIHNlbGYuc2tpcFdhaXRpbmcoKTsgfSkKICApOwp9KTsKCnNlbGYuYWRkRXZlbnRMaXN0ZW5lcigiYWN0aXZhdGUiLCBmdW5jdGlvbiAoZXZlbnQpIHsKICBldmVudC53YWl0VW50aWwoCiAgICBjYWNoZXMua2V5cygpLnRoZW4oZnVuY3Rpb24gKGtleXMpIHsKICAgICAgcmV0dXJuIFByb21pc2UuYWxsKGtleXMubWFwKGZ1bmN0aW9uIChrKSB7CiAgICAgICAgcmV0dXJuIGsgPT09IENBQ0hFID8gbnVsbCA6IGNhY2hlcy5kZWxldGUoayk7CiAgICAgIH0pKTsKICAgIH0pLnRoZW4oZnVuY3Rpb24gKCkgeyByZXR1cm4gc2VsZi5jbGllbnRzLmNsYWltKCk7IH0pCiAgKTsKfSk7CgpzZWxmLmFkZEV2ZW50TGlzdGVuZXIoImZldGNoIiwgZnVuY3Rpb24gKGV2ZW50KSB7CiAgaWYgKGV2ZW50LnJlcXVlc3QubWV0aG9kICE9PSAiR0VUIikgcmV0dXJuOwogIGV2ZW50LnJlc3BvbmRXaXRoKAogICAgY2FjaGVzLm1hdGNoKGV2ZW50LnJlcXVlc3QsIHsgaWdub3JlU2VhcmNoOiB0cnVlIH0pLnRoZW4oZnVuY3Rpb24gKGhpdCkgewogICAgICBpZiAoaGl0KSByZXR1cm4gaGl0OwogICAgICByZXR1cm4gZmV0Y2goZXZlbnQucmVxdWVzdCkudGhlbihmdW5jdGlvbiAocmVzKSB7CiAgICAgICAgaWYgKHJlcyAmJiByZXMub2sgJiYgbmV3IFVSTChldmVudC5yZXF1ZXN0LnVybCkub3JpZ2luID09PSBzZWxmLmxvY2F0aW9uLm9yaWdpbikgewogICAgICAgICAgdmFyIGNvcHkgPSByZXMuY2xvbmUoKTsKICAgICAgICAgIGNhY2hlcy5vcGVuKENBQ0hFKS50aGVuKGZ1bmN0aW9uIChjYWNoZSkgeyBjYWNoZS5wdXQoZXZlbnQucmVxdWVzdCwgY29weSk7IH0pOwogICAgICAgIH0KICAgICAgICByZXR1cm4gcmVzOwogICAgICB9KS5jYXRjaChmdW5jdGlvbiAoKSB7CiAgICAgICAgLy8gU2luIGNvbmV4acOzbiB5IHNpbiBjb3BpYSBkZWwgcmVjdXJzbzogc2kgZXJhIHVuYSBuYXZlZ2FjacOzbiwKICAgICAgICAvLyBzZSBzaXJ2ZSBsYSBww6FnaW5hIGd1YXJkYWRhIHBhcmEgcXVlIGVsIHJlbG9qIHNpZ2EgYWJyaWVuZG8uCiAgICAgICAgaWYgKGV2ZW50LnJlcXVlc3QubW9kZSA9PT0gIm5hdmlnYXRlIikgewogICAgICAgICAgcmV0dXJuIGNhY2hlcy5tYXRjaChJTkRFWCwgeyBpZ25vcmVTZWFyY2g6IHRydWUgfSk7CiAgICAgICAgfQogICAgICAgIHJldHVybiBSZXNwb25zZS5lcnJvcigpOwogICAgICB9KTsKICAgIH0pCiAgKTsKfSk7Cg=="); })
+          navigator.serviceWorker.register("data:application/javascript;base64,LyogUmVsb2ogZGUgRmlib25hY2NpIOKAlCBzZXJ2aWNlIHdvcmtlcjogZ3VhcmRhIGxhIHDDoWdpbmEsIHN1cyBpY29ub3MgeQogICBsYSBmb3RvIGRlIGxhIEx1bmEgcGFyYSBxdWUgZWwgcmVsb2ogYWJyYSBzaW4gY29uZXhpw7NuIHRyYXMgbGEKICAgcHJpbWVyYSB2aXNpdGEsIHlhIGluc3RhbGFkbyBvIGVuIGVsIG5hdmVnYWRvci4gKi8KdmFyIENBQ0hFID0gInJlbG9qLWZpYm9uYWNjaS12NiI7CnZhciBJTkRFWCA9ICIuLi9pbmRleC5odG1sIjsKdmFyIFBSRUNBQ0hFID0gWwogICIuLi9pbmRleC5odG1sIiwKICAiLi9tYW5pZmVzdC53ZWJtYW5pZmVzdCIsCiAgIi4vYnJvd3NlcmNvbmZpZy54bWwiLAogICIuL21vb24tc3VyZmFjZS5wbmciLAogICIuL2ljb24tMTQ0LnBuZyIsCiAgIi4vaWNvbi0xOTIucG5nIiwKICAiLi9pY29uLTI1Ni5wbmciLAogICIuL2ljb24tMzg0LnBuZyIsCiAgIi4vaWNvbi01MTIucG5nIiwKICAiLi9pY29uLW1hc2thYmxlLTUxMi5wbmciLAogICIuL2FwcGxlLXRvdWNoLWljb24ucG5nIiwKICAiLi9hcHBsZS10b3VjaC1pY29uLTEyMC5wbmciLAogICIuL2FwcGxlLXRvdWNoLWljb24tMTUyLnBuZyIsCiAgIi4vYXBwbGUtdG91Y2gtaWNvbi0xNjcucG5nIiwKICAiLi9mYXZpY29uLTE2LnBuZyIsCiAgIi4vZmF2aWNvbi0zMi5wbmciLAogICIuL2Zhdmljb24tNDgucG5nIiwKICAiLi9mYXZpY29uLmljbyIsCiAgIi4vbXN0aWxlLTE1MC5wbmciCl07CgpzZWxmLmFkZEV2ZW50TGlzdGVuZXIoImluc3RhbGwiLCBmdW5jdGlvbiAoZXZlbnQpIHsKICBldmVudC53YWl0VW50aWwoCiAgICBjYWNoZXMub3BlbihDQUNIRSkudGhlbihmdW5jdGlvbiAoY2FjaGUpIHsKICAgICAgcmV0dXJuIGNhY2hlLmFkZEFsbChQUkVDQUNIRSk7CiAgICB9KS50aGVuKGZ1bmN0aW9uICgpIHsgcmV0dXJuIHNlbGYuc2tpcFdhaXRpbmcoKTsgfSkKICApOwp9KTsKCnNlbGYuYWRkRXZlbnRMaXN0ZW5lcigiYWN0aXZhdGUiLCBmdW5jdGlvbiAoZXZlbnQpIHsKICBldmVudC53YWl0VW50aWwoCiAgICBjYWNoZXMua2V5cygpLnRoZW4oZnVuY3Rpb24gKGtleXMpIHsKICAgICAgcmV0dXJuIFByb21pc2UuYWxsKGtleXMubWFwKGZ1bmN0aW9uIChrKSB7CiAgICAgICAgcmV0dXJuIGsgPT09IENBQ0hFID8gbnVsbCA6IGNhY2hlcy5kZWxldGUoayk7CiAgICAgIH0pKTsKICAgIH0pLnRoZW4oZnVuY3Rpb24gKCkgeyByZXR1cm4gc2VsZi5jbGllbnRzLmNsYWltKCk7IH0pCiAgKTsKfSk7CgpzZWxmLmFkZEV2ZW50TGlzdGVuZXIoImZldGNoIiwgZnVuY3Rpb24gKGV2ZW50KSB7CiAgaWYgKGV2ZW50LnJlcXVlc3QubWV0aG9kICE9PSAiR0VUIikgcmV0dXJuOwogIGV2ZW50LnJlc3BvbmRXaXRoKAogICAgY2FjaGVzLm1hdGNoKGV2ZW50LnJlcXVlc3QsIHsgaWdub3JlU2VhcmNoOiB0cnVlIH0pLnRoZW4oZnVuY3Rpb24gKGhpdCkgewogICAgICBpZiAoaGl0KSByZXR1cm4gaGl0OwogICAgICByZXR1cm4gZmV0Y2goZXZlbnQucmVxdWVzdCkudGhlbihmdW5jdGlvbiAocmVzKSB7CiAgICAgICAgaWYgKHJlcyAmJiByZXMub2sgJiYgbmV3IFVSTChldmVudC5yZXF1ZXN0LnVybCkub3JpZ2luID09PSBzZWxmLmxvY2F0aW9uLm9yaWdpbikgewogICAgICAgICAgdmFyIGNvcHkgPSByZXMuY2xvbmUoKTsKICAgICAgICAgIGNhY2hlcy5vcGVuKENBQ0hFKS50aGVuKGZ1bmN0aW9uIChjYWNoZSkgeyBjYWNoZS5wdXQoZXZlbnQucmVxdWVzdCwgY29weSk7IH0pOwogICAgICAgIH0KICAgICAgICByZXR1cm4gcmVzOwogICAgICB9KS5jYXRjaChmdW5jdGlvbiAoKSB7CiAgICAgICAgLy8gU2luIGNvbmV4acOzbiB5IHNpbiBjb3BpYSBkZWwgcmVjdXJzbzogc2kgZXJhIHVuYSBuYXZlZ2FjacOzbiwKICAgICAgICAvLyBzZSBzaXJ2ZSBsYSBww6FnaW5hIGd1YXJkYWRhIHBhcmEgcXVlIGVsIHJlbG9qIHNpZ2EgYWJyaWVuZG8uCiAgICAgICAgaWYgKGV2ZW50LnJlcXVlc3QubW9kZSA9PT0gIm5hdmlnYXRlIikgewogICAgICAgICAgcmV0dXJuIGNhY2hlcy5tYXRjaChJTkRFWCwgeyBpZ25vcmVTZWFyY2g6IHRydWUgfSk7CiAgICAgICAgfQogICAgICAgIHJldHVybiBSZXNwb25zZS5lcnJvcigpOwogICAgICB9KTsKICAgIH0pCiAgKTsKfSk7Cg==", { scope: "./" })
+            .catch(function () { return navigator.serviceWorker.register("data:application/javascript;base64,LyogUmVsb2ogZGUgRmlib25hY2NpIOKAlCBzZXJ2aWNlIHdvcmtlcjogZ3VhcmRhIGxhIHDDoWdpbmEsIHN1cyBpY29ub3MgeQogICBsYSBmb3RvIGRlIGxhIEx1bmEgcGFyYSBxdWUgZWwgcmVsb2ogYWJyYSBzaW4gY29uZXhpw7NuIHRyYXMgbGEKICAgcHJpbWVyYSB2aXNpdGEsIHlhIGluc3RhbGFkbyBvIGVuIGVsIG5hdmVnYWRvci4gKi8KdmFyIENBQ0hFID0gInJlbG9qLWZpYm9uYWNjaS12NiI7CnZhciBJTkRFWCA9ICIuLi9pbmRleC5odG1sIjsKdmFyIFBSRUNBQ0hFID0gWwogICIuLi9pbmRleC5odG1sIiwKICAiLi9tYW5pZmVzdC53ZWJtYW5pZmVzdCIsCiAgIi4vYnJvd3NlcmNvbmZpZy54bWwiLAogICIuL21vb24tc3VyZmFjZS5wbmciLAogICIuL2ljb24tMTQ0LnBuZyIsCiAgIi4vaWNvbi0xOTIucG5nIiwKICAiLi9pY29uLTI1Ni5wbmciLAogICIuL2ljb24tMzg0LnBuZyIsCiAgIi4vaWNvbi01MTIucG5nIiwKICAiLi9pY29uLW1hc2thYmxlLTUxMi5wbmciLAogICIuL2FwcGxlLXRvdWNoLWljb24ucG5nIiwKICAiLi9hcHBsZS10b3VjaC1pY29uLTEyMC5wbmciLAogICIuL2FwcGxlLXRvdWNoLWljb24tMTUyLnBuZyIsCiAgIi4vYXBwbGUtdG91Y2gtaWNvbi0xNjcucG5nIiwKICAiLi9mYXZpY29uLTE2LnBuZyIsCiAgIi4vZmF2aWNvbi0zMi5wbmciLAogICIuL2Zhdmljb24tNDgucG5nIiwKICAiLi9mYXZpY29uLmljbyIsCiAgIi4vbXN0aWxlLTE1MC5wbmciCl07CgpzZWxmLmFkZEV2ZW50TGlzdGVuZXIoImluc3RhbGwiLCBmdW5jdGlvbiAoZXZlbnQpIHsKICBldmVudC53YWl0VW50aWwoCiAgICBjYWNoZXMub3BlbihDQUNIRSkudGhlbihmdW5jdGlvbiAoY2FjaGUpIHsKICAgICAgcmV0dXJuIGNhY2hlLmFkZEFsbChQUkVDQUNIRSk7CiAgICB9KS50aGVuKGZ1bmN0aW9uICgpIHsgcmV0dXJuIHNlbGYuc2tpcFdhaXRpbmcoKTsgfSkKICApOwp9KTsKCnNlbGYuYWRkRXZlbnRMaXN0ZW5lcigiYWN0aXZhdGUiLCBmdW5jdGlvbiAoZXZlbnQpIHsKICBldmVudC53YWl0VW50aWwoCiAgICBjYWNoZXMua2V5cygpLnRoZW4oZnVuY3Rpb24gKGtleXMpIHsKICAgICAgcmV0dXJuIFByb21pc2UuYWxsKGtleXMubWFwKGZ1bmN0aW9uIChrKSB7CiAgICAgICAgcmV0dXJuIGsgPT09IENBQ0hFID8gbnVsbCA6IGNhY2hlcy5kZWxldGUoayk7CiAgICAgIH0pKTsKICAgIH0pLnRoZW4oZnVuY3Rpb24gKCkgeyByZXR1cm4gc2VsZi5jbGllbnRzLmNsYWltKCk7IH0pCiAgKTsKfSk7CgpzZWxmLmFkZEV2ZW50TGlzdGVuZXIoImZldGNoIiwgZnVuY3Rpb24gKGV2ZW50KSB7CiAgaWYgKGV2ZW50LnJlcXVlc3QubWV0aG9kICE9PSAiR0VUIikgcmV0dXJuOwogIGV2ZW50LnJlc3BvbmRXaXRoKAogICAgY2FjaGVzLm1hdGNoKGV2ZW50LnJlcXVlc3QsIHsgaWdub3JlU2VhcmNoOiB0cnVlIH0pLnRoZW4oZnVuY3Rpb24gKGhpdCkgewogICAgICBpZiAoaGl0KSByZXR1cm4gaGl0OwogICAgICByZXR1cm4gZmV0Y2goZXZlbnQucmVxdWVzdCkudGhlbihmdW5jdGlvbiAocmVzKSB7CiAgICAgICAgaWYgKHJlcyAmJiByZXMub2sgJiYgbmV3IFVSTChldmVudC5yZXF1ZXN0LnVybCkub3JpZ2luID09PSBzZWxmLmxvY2F0aW9uLm9yaWdpbikgewogICAgICAgICAgdmFyIGNvcHkgPSByZXMuY2xvbmUoKTsKICAgICAgICAgIGNhY2hlcy5vcGVuKENBQ0hFKS50aGVuKGZ1bmN0aW9uIChjYWNoZSkgeyBjYWNoZS5wdXQoZXZlbnQucmVxdWVzdCwgY29weSk7IH0pOwogICAgICAgIH0KICAgICAgICByZXR1cm4gcmVzOwogICAgICB9KS5jYXRjaChmdW5jdGlvbiAoKSB7CiAgICAgICAgLy8gU2luIGNvbmV4acOzbiB5IHNpbiBjb3BpYSBkZWwgcmVjdXJzbzogc2kgZXJhIHVuYSBuYXZlZ2FjacOzbiwKICAgICAgICAvLyBzZSBzaXJ2ZSBsYSBww6FnaW5hIGd1YXJkYWRhIHBhcmEgcXVlIGVsIHJlbG9qIHNpZ2EgYWJyaWVuZG8uCiAgICAgICAgaWYgKGV2ZW50LnJlcXVlc3QubW9kZSA9PT0gIm5hdmlnYXRlIikgewogICAgICAgICAgcmV0dXJuIGNhY2hlcy5tYXRjaChJTkRFWCwgeyBpZ25vcmVTZWFyY2g6IHRydWUgfSk7CiAgICAgICAgfQogICAgICAgIHJldHVybiBSZXNwb25zZS5lcnJvcigpOwogICAgICB9KTsKICAgIH0pCiAgKTsKfSk7Cg=="); })
             .catch(function () {});
         });
       }
