@@ -736,23 +736,26 @@
           // placa, en trazo fino y tenue. Son las líneas que cruzan la
           // placa en la foto; ya no hay líneas sueltas por hora.
           var gh = document.getElementById("ghosts");
-          // Las 12 espirales van completas, también la del 1 (kk=0) y
-          // la del 7 (kk=6), en el mismo trazo fino y tenue que las
-          // demás. Y no paran en el radio de la espiral principal
+          // Las 12 espirales van en el mismo trazo fino y tenue.
+          // Y no paran en el radio de la espiral principal
           // (~334): siguen la misma curva hasta el radio ~440, para
-          // que las que salen hacia arriba o hacia abajo —la del 12,
-          // la del 6, la del 1 y la del 7— lleguen hasta el borde de
+          // que las que salen hacia arriba o hacia abajo —la del 12
+          // y la del 6— lleguen hasta el borde de
           // la placa, hasta el límite del contenedor, como las demás
           // (el recorte de la placa corta lo que sobra; en las que
           // salen por los lados el tramo añadido queda fuera y no se
-          // nota cambio). La del 1 cruza el círculo de la Luna: se
-          // recorta con plateNoMoonClip para que pase por detrás de
-          // ella y no la tape.
+          // nota cambio). Solo dos se recortan en -48: la del 1
+          // (kk=0), para que su arco lejano ya no suba hasta pasar
+          // bajo la Luna, y la del 7 (kk=6), para que su arco lejano
+          // ya no baje hasta el borde inferior, entre el 6 y su
+          // línea. Las dos conservan su tramo junto a su número y
+          // hasta el centro, igual que antes.
           var thGMin = -96;
           for (var kk = 0; kk < 12; kk++) {
+            var thStart = (kk === 0 || kk === 6) ? -48 : thGMin;
             var gd = "";
             for (var m = 0; m <= 200; m++) {
-              var thg = thGMin + (thMax - thGMin) * m / 200, pg = polar(spiralR(thg), thg + kk * 30);
+              var thg = thStart + (thMax - thStart) * m / 200, pg = polar(spiralR(thg), thg + kk * 30);
               gd += (m === 0 ? "M" : "L") + pg.x.toFixed(1) + " " + pg.y.toFixed(1);
             }
             var gp = document.createElementNS(NS, "path");
