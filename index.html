@@ -498,6 +498,7 @@
                 <stop offset="1" stop-color="#060607"></stop>
               </linearGradient>
               <clipPath id="plateClip"><rect x="140" y="28" width="360" height="720" rx="14"></rect></clipPath>
+              <clipPath id="plateNoMoonClip"><path clip-rule="evenodd" d="M140 28H500V748H140Z M396 128 A40 40 0 1 0 476 128 A40 40 0 1 0 396 128 Z"></path></clipPath>
               <clipPath id="outsideClip"><path clip-rule="evenodd" d="M-200 -200H900V1100H-200Z M154 28H486Q500 28 500 42V734Q500 748 486 748H154Q140 748 140 734V42Q140 28 154 28Z"></path></clipPath>
             </defs>
             <rect class="plate-body" id="plateBody" x="140" y="28" width="360" height="720" rx="14" fill="url(#blackGrad)"></rect>
@@ -731,24 +732,32 @@
           document.getElementById("spiralPathOut").setAttribute("d", d);
           // Las 12 espirales de las horas, grabadas, como en la imagen
           // de referencia: la misma curva logarítmica de la espiral
-          // principal (thMin..thMax), repetida cada 30° sobre toda la
+          // principal, repetida cada 30° sobre toda la
           // placa, en trazo fino y tenue. Son las líneas que cruzan la
           // placa en la foto; ya no hay líneas sueltas por hora.
           var gh = document.getElementById("ghosts");
+          // Las 12 espirales van completas, también la del 1 (kk=0) y
+          // la del 7 (kk=6), en el mismo trazo fino y tenue que las
+          // demás. Y no paran en el radio de la espiral principal
+          // (~334): siguen la misma curva hasta el radio ~440, para
+          // que las que salen hacia arriba o hacia abajo —la del 12,
+          // la del 6, la del 1 y la del 7— lleguen hasta el borde de
+          // la placa, hasta el límite del contenedor, como las demás
+          // (el recorte de la placa corta lo que sobra; en las que
+          // salen por los lados el tramo añadido queda fuera y no se
+          // nota cambio). La del 1 cruza el círculo de la Luna: se
+          // recorta con plateNoMoonClip para que pase por detrás de
+          // ella y no la tape.
+          var thGMin = -96;
           for (var kk = 0; kk < 12; kk++) {
-            // Se omiten dos espirales: la de kk=0, que cruza sobre la
-            // Luna (pasa a ~11 unidades de su centro, 436,128), y la
-            // de kk=6, cuyo barrido inferior es la curva que baja a la
-            // izquierda del 6. La línea propia del 6 es la de kk=5 y
-            // esa sí se queda, como la de las demás horas.
-            if (kk === 0 || kk === 6) continue;
             var gd = "";
-            for (var m = 0; m <= 160; m++) {
-              var thg = thMin + (thMax - thMin) * m / 160, pg = polar(spiralR(thg), thg + kk * 30);
+            for (var m = 0; m <= 200; m++) {
+              var thg = thGMin + (thMax - thGMin) * m / 200, pg = polar(spiralR(thg), thg + kk * 30);
               gd += (m === 0 ? "M" : "L") + pg.x.toFixed(1) + " " + pg.y.toFixed(1);
             }
             var gp = document.createElementNS(NS, "path");
             gp.setAttribute("d", gd); gp.setAttribute("class", "ghost");
+            if (kk === 0) gp.setAttribute("clip-path", "url(#plateNoMoonClip)");
             gh.appendChild(gp);
           }
         })();
