@@ -341,11 +341,7 @@
       .min-tick { fill: none; stroke: var(--p-tick); stroke-width: 2.2; stroke-linecap: round; opacity: 0.75; }
       .min-num.on { display: inline; fill: var(--p-hl); }
       .min-tick.on { stroke: var(--p-hl); stroke-width: 3; opacity: 1; }
-      /* Rayitas de cada minuto entre las marcas de 5: radiales como
-         en un reloj normal, más chicas y tenues, para contar el
-         minuto exacto entre dos arcos. */
-      .min-tick-sub { fill: none; stroke: var(--p-tick); stroke-width: 1.1; stroke-linecap: round; opacity: 0.35; }
-      .min-tick-sub.on { stroke: var(--p-hl); stroke-width: 1.8; opacity: 1; }
+
       .plate-nums { transition: opacity 0.3s ease; }
       .hide-nums .plate-nums { opacity: 0; }
       .plate-num {
@@ -1208,7 +1204,7 @@
         // la derecha y 35-60 a la izquierda, con marquitas cortas que son
         // tramos exactos de una segunda espiral, fina y roja, que gira una
         // vuelta por hora (el minutero). El minuto en curso se resalta.
-        var minNumEls = {}, minTickEls = {}, minSubEls = {};
+        var minNumEls = {}, minTickEls = {};
         function markMinute(deg) {
           var m = (((deg % 360) + 360) % 360) / 6, j = Math.floor(m / 5) || 12;
           for (var k = 1; k <= 12; k++) {
@@ -1216,9 +1212,6 @@
             minNumEls[k].classList.toggle("on", k === j);
             minTickEls[k].classList.toggle("on", k === j);
           }
-          // La rayita del minuto exacto en curso también se enciende.
-          var mm = Math.floor(m) % 60, s;
-          for (s in minSubEls) minSubEls[s].classList.toggle("on", Number(s) === mm);
         }
         (function buildMinuteScale() {
           var NS2 = "http://www.w3.org/2000/svg", numsG = document.getElementById("plateNums");
@@ -1236,24 +1229,7 @@
             var tk = document.createElementNS(NS2, "path");
             tk.setAttribute("d", td); tk.setAttribute("class", "min-tick");
             numsG.appendChild(tk); minTickEls[j] = tk;
-            // Rayitas de cada minuto entre esta marca de 5 y la
-            // siguiente: como en el arco de un reloj normal, una
-            // rayita chica por minuto cruzando la espiral (radial),
-            // en el hueco entre los dos segmentos grandes, no encima
-            // de ellos; la grande es la de cada 5.
-            var gapW = 30 - Ls / K, tickLen = 5;
-            for (var k = 1; k <= 4; k++) {
-              var t0 = th - Ls / K - gapW * k / 5;
-              var q1 = spm(t0);
-              var dx = q1.x - CENTER.x, dy = q1.y - CENTER.y;
-              var rl = Math.sqrt(dx * dx + dy * dy), ux = dx / rl, uy = dy / rl;
-              var td1 = "M" + (q1.x - ux * tickLen).toFixed(1) + " " + (q1.y - uy * tickLen).toFixed(1)
-                      + "L" + (q1.x + ux * tickLen).toFixed(1) + " " + (q1.y + uy * tickLen).toFixed(1);
-              var ts = document.createElementNS(NS2, "path");
-              ts.setAttribute("d", td1); ts.setAttribute("class", "min-tick-sub");
-              numsG.appendChild(ts);
-              minSubEls[(5 * j + k) % 60] = ts;
-            }
+
             var e1 = spm(th), e0 = spm(th - Ls / K);
             var far = Math.abs(e1.y - CENTER.y) > Math.abs(e0.y - CENTER.y) ? e1 : e0, near = far === e1 ? e0 : e1;
             var vx = far.x - near.x, vy = far.y - near.y, vl = Math.hypot(vx, vy) || 1;
