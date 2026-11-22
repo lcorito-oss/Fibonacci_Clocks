@@ -719,14 +719,14 @@
         // vienen: rebotan en los extremos de la espiral y, al chocar
         // entre sí, intercambian velocidades.
         var BOUNCE_H = [
-          { len: 70, s: 60, v: 95 },
-          { len: 55, s: 430, v: -150 },
-          { len: 45, s: 760, v: 210 }
+          { len: 70, s: 60, v: 95, c: "#ffd27a", g: "#f5b942" },
+          { len: 55, s: 430, v: -150, c: "#ffb84d", g: "#e69a1f" },
+          { len: 45, s: 760, v: 210, c: "#ffe9a8", g: "#f7cf6b" }
         ];
         var BOUNCE_M = [
-          { len: 42, s: 80, v: 130 },
-          { len: 32, s: 420, v: -200 },
-          { len: 24, s: 700, v: 280 }
+          { len: 42, s: 80, v: 130, c: "#ff7fb0", g: "#c2185b" },
+          { len: 32, s: 420, v: -200, c: "#ff5c8a", g: "#a3134a" },
+          { len: 24, s: 700, v: 280, c: "#ffa8c8", g: "#d14d7e" }
         ];
         var bouncersH = [], bouncersM = [];
         var SP_A = 5.36, SP_B = -0.0053468; // espiral áurea: el radio crece ×φ cada 90° (~2.5 vueltas visibles)
@@ -856,11 +856,12 @@
           BOUNCE_H.forEach(function (b) {
             var els = [];
             [spiralEl, spiralEl2].forEach(function (g) {
-              ["flow-glow flow-glow-h", "flow flow-h"].forEach(function (c) {
+              [["flow-glow flow-glow-h", b.g], ["flow flow-h", b.c]].forEach(function (cc) {
                 var fp = document.createElementNS(NS, "path");
                 fp.setAttribute("d", cl);
                 fp.setAttribute("pathLength", "1000");
-                fp.setAttribute("class", c);
+                fp.setAttribute("class", cc[0]);
+                fp.style.stroke = cc[1];
                 fp.setAttribute("stroke-dasharray", b.len + " 1000");
                 fp.setAttribute("stroke-dashoffset", String(-b.s));
                 g.appendChild(fp);
@@ -1254,11 +1255,12 @@
           // Tres líneas que rebotan en la espiral del minutero.
           BOUNCE_M.forEach(function (b) {
             var els = [];
-            ["flow-glow flow-glow-m", "flow flow-m"].forEach(function (c) {
+            [["flow-glow flow-glow-m", b.g], ["flow flow-m", b.c]].forEach(function (cc) {
               var fp = document.createElementNS(NS2, "path");
               fp.setAttribute("d", mc);
               fp.setAttribute("pathLength", "1000");
-              fp.setAttribute("class", c);
+              fp.setAttribute("class", cc[0]);
+              fp.style.stroke = cc[1];
               fp.setAttribute("stroke-dasharray", b.len + " 1000");
               fp.setAttribute("stroke-dashoffset", String(-b.s));
               handMinute.appendChild(fp);
