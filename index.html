@@ -339,8 +339,10 @@
       }
       .min-num { display: none; font-family: "Archivo", system-ui, sans-serif; font-weight: 600; fill: var(--p-dialnum); text-anchor: middle; dominant-baseline: alphabetic; paint-order: stroke; stroke: rgba(5, 5, 8, 0.9); stroke-width: 2.4; stroke-linejoin: round; }
       .min-tick { fill: none; stroke: var(--p-tick); stroke-width: 2.2; stroke-linecap: round; opacity: 0.75; }
+      .min-tick.minor { stroke-width: 0.9; opacity: 0.38; }
       .min-num.on { display: inline; fill: var(--p-hl); }
       .min-tick.on { stroke: var(--p-hl); stroke-width: 3; opacity: 1; }
+      .min-tick.minor.on { stroke-width: 1.35; opacity: 0.92; }
 
       .plate-nums { transition: opacity 0.3s ease; }
       .hide-nums .plate-nums { opacity: 0; }
@@ -881,20 +883,8 @@
           // placa, en trazo fino y tenue. Son las líneas que cruzan la
           // placa en la foto; ya no hay líneas sueltas por hora.
           var gh = document.getElementById("ghosts");
-          // Las 12 espirales van en el mismo trazo fino y tenue.
-          // Y no paran en el radio de la espiral principal
-          // (~334): siguen la misma curva hasta el radio ~440, para
-          // que las que salen hacia arriba o hacia abajo —la del 12
-          // y la del 6— lleguen hasta el borde de
-          // la placa, hasta el límite del contenedor, como las demás
-          // (el recorte de la placa corta lo que sobra; en las que
-          // salen por los lados el tramo añadido queda fuera y no se
-          // nota cambio). Solo dos se recortan en -48: la del 1
-          // (kk=0), para que su arco lejano ya no suba hasta pasar
-          // bajo la Luna, y la del 7 (kk=6), para que su arco lejano
-          // ya no baje hasta el borde inferior, entre el 6 y su
-          // línea. Las dos conservan su tramo junto a su número y
-          // hasta el centro, igual que antes.
+          // Las doce espirales atraviesan la placa completa; el clip de la caja
+          // y el hueco de la Luna delimitan la parte visible.
           var thGMin = -136;
           for (var kk = 0; kk < 12; kk++) {
             var thStart = thGMin;
@@ -908,14 +898,7 @@
             gp.setAttribute("clip-path", "url(#plateNoMoonClip)");
             gh.appendChild(gp);
           }
-          // Solo se ve la franja que tiene horas: se quitan los tramos
-          // que quedan arriba del 12 y debajo del 6.
-          var gb = document.createElementNS(NS, "clipPath"); gb.setAttribute("id", "ghostBand");
-          var gr = document.createElementNS(NS, "rect");
-          gr.setAttribute("x", 140); gr.setAttribute("y", (tickMinY - 20).toFixed(1));
-          gr.setAttribute("width", 360); gr.setAttribute("height", (tickMaxY - tickMinY + 40).toFixed(1));
-          gb.appendChild(gr); document.querySelector("#plateSvg defs").appendChild(gb);
-          gh.setAttribute("clip-path", "url(#ghostBand)");
+
         })();
 
         // Giro de la espiral para una hora dada: una vuelta completa
@@ -1204,33 +1187,46 @@
         // la derecha y 35-60 a la izquierda, con marquitas cortas que son
         // tramos exactos de una segunda espiral, fina y roja, que gira una
         // vuelta por hora (el minutero). El minuto en curso se resalta.
-        var minNumEls = {}, minTickEls = {};
+        var minNumEls = {}, minTickEls = [];
         function markMinute(deg) {
-          var m = (((deg % 360) + 360) % 360) / 6, j = Math.floor(m / 5) || 12;
-          for (var k = 1; k <= 12; k++) {
-            if (!minNumEls[k]) continue;
-            minNumEls[k].classList.toggle("on", k === j);
-            minTickEls[k].classList.toggle("on", k === j);
+          var minute = Math.round((((deg % 360) + 360) % 360) / 6) % 60;
+          var j = Math.floor(minute / 5) || 12, majorMinute = (j * 5) % 60;
+          for (var k = 0; k < 60; k++) {
+            if (minTickEls[k]) minTickEls[k].classList.toggle("on", k === minute || k === majorMinute);
+          }
+          for (var n = 1; n <= 12; n++) {
+            if (minNumEls[n]) minNumEls[n].classList.toggle("on", n === j);
           }
         }
         (function buildMinuteScale() {
           var NS2 = "http://www.w3.org/2000/svg", numsG = document.getElementById("plateNums");
           var Am = 4.166, Bm = SP_B, PHIr = [-54, -46, -38, -30, -22, -14], msz = [11, 12, 13, 14, 15, 16];
           function mR(t) { return Math.exp(Am + Bm * t); }
-          for (var j = 1; j <= 12; j++) {
-            var up = j > 6, k = up ? j - 6 : j, phi = PHIr[k - 1] - (up ? 180 : 0), rank = k - 1;
-            var th = phi - (j - 1) * 30 + (up ? 360 : 0), rho = mR(th), rot = (j - 1) * 30 - (up ? 360 : 0);
-            var spm = function (t) { return polar(mR(t), t + rot); };
-            var fs = msz[rank], Ls = 11 + 2.5 * rank, K = 1.046 * rho * Math.PI / 180, td = "";
+          function anchor(j) {
+            if (j <= 6) return { th: -54 - 22 * (j - 1), rot: 30 * (j - 1) };
+            var k = j - 6;
+            return { th: -54 - 22 * (k - 1), rot: -180 + 30 * (k - 1) };
+          }
+          function addMinuteTick(th, rot, length, minute, minor) {
+            var rho = mR(th), K = 1.046 * rho * Math.PI / 180;
+            var spm = function (t) { return polar(mR(t), t + rot); }, td = "";
             for (var i = 0; i <= 8; i++) {
-              var q = spm(th - (Ls / K) * (1 - i / 8));
+              var q = spm(th - length / (2 * K) + (length / K) * i / 8);
               td += (i ? "L" : "M") + q.x.toFixed(1) + " " + q.y.toFixed(1);
             }
-            var tk = document.createElementNS(NS2, "path");
-            tk.setAttribute("d", td); tk.setAttribute("class", "min-tick");
-            numsG.appendChild(tk); minTickEls[j] = tk;
+            var tick = document.createElementNS(NS2, "path");
+            tick.setAttribute("d", td);
+            tick.setAttribute("class", "min-tick" + (minor ? " minor" : ""));
+            numsG.appendChild(tick); minTickEls[minute] = tick;
+          }
+          for (var j = 1; j <= 12; j++) {
+            var up = j > 6, k = up ? j - 6 : j, phi = PHIr[k - 1] - (up ? 180 : 0), rank = k - 1;
+            var pos = anchor(j), th = pos.th, rho = mR(th), rot = pos.rot;
+            var spm = function (t) { return polar(mR(t), t + rot); };
+            var fs = msz[rank], Ls = 11 + 2.5 * rank, K = 1.046 * rho * Math.PI / 180;
+            addMinuteTick(th, rot, Ls, (j * 5) % 60, false);
 
-            var e1 = spm(th), e0 = spm(th - Ls / K);
+            var e1 = spm(th + Ls / (2 * K)), e0 = spm(th - Ls / (2 * K));
             var far = Math.abs(e1.y - CENTER.y) > Math.abs(e0.y - CENTER.y) ? e1 : e0, near = far === e1 ? e0 : e1;
             var vx = far.x - near.x, vy = far.y - near.y, vl = Math.hypot(vx, vy) || 1;
             var wT = String(5 * j).length * fs * 0.6, gap = 7 + (Math.abs(vy / vl) > 0.5 ? fs * 0.5 : wT / 2);
@@ -1239,6 +1235,19 @@
             tn.setAttribute("dy", "0.35em"); tn.setAttribute("font-size", fs); tn.setAttribute("class", "min-num");
             tn.textContent = String(5 * j);
             numsG.appendChild(tn); minNumEls[j] = tn;
+          }
+          // Cuatro marcas finas entre cada par de marcas de cinco minutos,
+          // interpoladas sobre el recorrido Fibonacci y centradas en su posición.
+          for (var gap = 1; gap <= 12; gap++) {
+            var prev = anchor(gap === 1 ? 12 : gap - 1), next = anchor(gap);
+            if (gap === 7) next.rot += 360;
+            for (var step = 1; step <= 4; step++) {
+              var f = step / 5;
+              var thMinor = prev.th + (next.th - prev.th) * f;
+              var rotMinor = prev.rot + (next.rot - prev.rot) * f;
+              var minute = (5 * (gap - 1) + step) % 60;
+              addMinuteTick(thMinor, rotMinor, 4.2, minute, true);
+            }
           }
           // La espiral del minutero: cinta fina que se afina hacia el buje.
           var rmax = 172, thA = (Math.log(rmax) - Am) / Bm, thZ = (Math.log(2.5) - Am) / Bm, Lf = [], Rt = [];
