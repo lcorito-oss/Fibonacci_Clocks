@@ -341,6 +341,10 @@
       .min-tick { fill: none; stroke: var(--p-tick); stroke-width: 2.2; stroke-linecap: round; opacity: 0.75; }
       .min-num.on { display: inline; fill: var(--p-hl); }
       .min-tick.on { stroke: var(--p-hl); stroke-width: 3; opacity: 1; }
+      /* Rayitas de cada minuto entre las marcas de 5: más chicas y
+         tenues, para contar el minuto exacto entre dos arcos. */
+      .min-tick-sub { fill: none; stroke: var(--p-tick); stroke-width: 1.1; stroke-linecap: round; opacity: 0.35; }
+      .min-tick-sub.on { stroke: var(--p-hl); stroke-width: 1.8; opacity: 1; }
       .plate-nums { transition: opacity 0.3s ease; }
       .hide-nums .plate-nums { opacity: 0; }
       .plate-num {
@@ -729,6 +733,10 @@
           { len: 24, s: 700, v: 280, c: "#ffa8c8", g: "#d14d7e" }
         ];
         var bouncersH = [], bouncersM = [];
+        // Gravedad suave dentro de la espiral (unidades de pathLength
+        // por segundo al cuadrado, hacia el centro): al subir se frena
+        // y al bajar acelera un poquito.
+        var GRAV = 18;
         var SP_A = 5.36, SP_B = -0.0053468; // espiral áurea: el radio crece ×φ cada 90° (~2.5 vueltas visibles)
         var PHI = { 1: 60, 2: 64, 3: 68, 4: 72, 5: 76, 6: 80,
                     7: -124, 8: -120, 9: -116, 10: -112, 11: -108, 12: -104 };
@@ -856,7 +864,7 @@
           BOUNCE_H.forEach(function (b) {
             var els = [];
             [spiralEl, spiralEl2].forEach(function (g) {
-              [["flow-glow flow-glow-h", b.g], ["flow flow-h", b.c]].forEach(function (cc) {
+              [["flow-glow flow-glow-h", b.g, 8, 0.28], ["flow flow-h", b.c, 2.2, 1]].forEach(function (cc) {
                 var fp = document.createElementNS(NS, "path");
                 fp.setAttribute("d", cl);
                 fp.setAttribute("pathLength", "1000");
@@ -865,10 +873,10 @@
                 fp.setAttribute("stroke-dasharray", b.len + " 1000");
                 fp.setAttribute("stroke-dashoffset", String(-b.s));
                 g.appendChild(fp);
-                els.push(fp);
+                els.push({ el: fp, w: cc[2], o: cc[3] });
               });
             });
-            bouncersH.push({ els: els, len: b.len, s: b.s, v: b.v });
+            bouncersH.push({ els: els, len: b.len, s: b.s, v: b.v, flash: 0 });
           });
           // Las 12 espirales de las horas, grabadas, como en la imagen
           // de referencia: la misma curva logarítmica de la espiral
@@ -1199,7 +1207,7 @@
         // la derecha y 35-60 a la izquierda, con marquitas cortas que son
         // tramos exactos de una segunda espiral, fina y roja, que gira una
         // vuelta por hora (el minutero). El minuto en curso se resalta.
-        var minNumEls = {}, minTickEls = {};
+        var minNumEls = {}, minTickEls = {}, minSubEls = {};
         function markMinute(deg) {
           var m = (((deg % 360) + 360) % 360) / 6, j = Math.floor(m / 5) || 12;
           for (var k = 1; k <= 12; k++) {
@@ -1207,6 +1215,9 @@
             minNumEls[k].classList.toggle("on", k === j);
             minTickEls[k].classList.toggle("on", k === j);
           }
+          // La rayita del minuto exacto en curso también se enciende.
+          var mm = Math.floor(m) % 60, s;
+          for (s in minSubEls) minSubEls[s].classList.toggle("on", Number(s) === mm);
         }
         (function buildMinuteScale() {
           var NS2 = "http://www.w3.org/2000/svg", numsG = document.getElementById("plateNums");
@@ -1224,6 +1235,20 @@
             var tk = document.createElementNS(NS2, "path");
             tk.setAttribute("d", td); tk.setAttribute("class", "min-tick");
             numsG.appendChild(tk); minTickEls[j] = tk;
+            // Rayitas de cada minuto entre esta marca de 5 y la
+            // siguiente: más chicas y tenues, para contar el minuto
+            // exacto entre dos arcos (6° de espiral por minuto).
+            for (var k = 1; k <= 4; k++) {
+              var t0 = th - 6 * k, Ls1 = Ls * 0.55, td1 = "";
+              for (var i1 = 0; i1 <= 6; i1++) {
+                var q1 = spm(t0 - (Ls1 / K) * (1 - i1 / 6));
+                td1 += (i1 ? "L" : "M") + q1.x.toFixed(1) + " " + q1.y.toFixed(1);
+              }
+              var ts = document.createElementNS(NS2, "path");
+              ts.setAttribute("d", td1); ts.setAttribute("class", "min-tick-sub");
+              numsG.appendChild(ts);
+              minSubEls[(5 * j + k) % 60] = ts;
+            }
             var e1 = spm(th), e0 = spm(th - Ls / K);
             var far = Math.abs(e1.y - CENTER.y) > Math.abs(e0.y - CENTER.y) ? e1 : e0, near = far === e1 ? e0 : e1;
             var vx = far.x - near.x, vy = far.y - near.y, vl = Math.hypot(vx, vy) || 1;
@@ -1255,7 +1280,7 @@
           // Tres líneas que rebotan en la espiral del minutero.
           BOUNCE_M.forEach(function (b) {
             var els = [];
-            [["flow-glow flow-glow-m", b.g], ["flow flow-m", b.c]].forEach(function (cc) {
+            [["flow-glow flow-glow-m", b.g, 5, 0.4], ["flow flow-m", b.c, 1.4, 1]].forEach(function (cc) {
               var fp = document.createElementNS(NS2, "path");
               fp.setAttribute("d", mc);
               fp.setAttribute("pathLength", "1000");
@@ -1264,9 +1289,9 @@
               fp.setAttribute("stroke-dasharray", b.len + " 1000");
               fp.setAttribute("stroke-dashoffset", String(-b.s));
               handMinute.appendChild(fp);
-              els.push(fp);
+              els.push({ el: fp, w: cc[2], o: cc[3] });
             });
-            bouncersM.push({ els: els, len: b.len, s: b.s, v: b.v });
+            bouncersM.push({ els: els, len: b.len, s: b.s, v: b.v, flash: 0 });
           });
         })();
 
@@ -1490,35 +1515,64 @@
 
         // Anima las líneas que rebotan dentro de las espirales.
         function stepBouncers(list, dt) {
-          var i, j, e, b, a, c, ca, cc, overlap, tmp, dir, da, off;
+          var i, j, e, b, a, c, ca, cc, overlap, tmp, dir, da, off, fw, item;
+          var minA, maxA, minC, maxC, wantA, wantC, pushC, newA, newC;
           for (i = 0; i < list.length; i++) {
             b = list[i];
+            // Gravedad: al subir (v < 0) se frena, al bajar (v > 0)
+            // acelera un poquito.
+            b.v += GRAV * dt;
             b.s += b.v * dt;
             if (b.s < 0) { b.s = 0; b.v = Math.abs(b.v); }
             if (b.s + b.len > 1000) { b.s = 1000 - b.len; b.v = -Math.abs(b.v); }
+            // El destello del choque se apaga poco a poco.
+            if (b.flash > 0) b.flash = Math.max(0, b.flash - dt / 0.35);
           }
           // Choque entre dos líneas: intercambian velocidades (como dos
-          // bolas iguales) y se separan para no quedarse pegadas.
-          for (i = 0; i < list.length; i++) {
-            for (j = i + 1; j < list.length; j++) {
-              a = list[i]; c = list[j];
-              ca = a.s + a.len / 2; cc = c.s + c.len / 2;
-              overlap = (a.len + c.len) / 2 - Math.abs(ca - cc);
-              if (overlap > 0) {
-                tmp = a.v; a.v = c.v; c.v = tmp;
-                dir = cc >= ca ? 1 : -1;
-                ca -= dir * overlap / 2; cc += dir * overlap / 2;
-                a.s = Math.max(0, Math.min(1000 - a.len, ca - a.len / 2));
-                c.s = Math.max(0, Math.min(1000 - c.len, cc - c.len / 2));
+          // bolas iguales) y se separan para no quedarse pegadas; además
+          // les queda un destello breve. Si una queda pegada a un
+          // extremo, la otra se aparta todo lo que falta. Se repasa dos
+          // veces por si al separar una pareja se junta otra; en el
+          // repaso solo se separan, sin volver a intercambiar velocidades.
+          var pass, any;
+          for (pass = 0; pass < 2; pass++) {
+            any = false;
+            for (i = 0; i < list.length; i++) {
+              for (j = i + 1; j < list.length; j++) {
+                a = list[i]; c = list[j];
+                ca = a.s + a.len / 2; cc = c.s + c.len / 2;
+                overlap = (a.len + c.len) / 2 - Math.abs(ca - cc);
+                if (overlap > 0) {
+                  any = true;
+                  if (pass === 0) {
+                    tmp = a.v; a.v = c.v; c.v = tmp;
+                    a.flash = 1; c.flash = 1;
+                  }
+                  dir = cc >= ca ? 1 : -1;
+                  minA = a.len / 2; maxA = 1000 - a.len / 2;
+                  minC = c.len / 2; maxC = 1000 - c.len / 2;
+                  wantA = ca - dir * overlap / 2; wantC = cc + dir * overlap / 2;
+                  newA = Math.max(minA, Math.min(maxA, wantA));
+                  pushC = wantC - (wantA - newA);
+                  newC = Math.max(minC, Math.min(maxC, pushC));
+                  newA = Math.max(minA, Math.min(maxA, newA - (pushC - newC)));
+                  a.s = newA - a.len / 2; c.s = newC - c.len / 2;
+                }
               }
             }
+            if (!any) break;
           }
           for (i = 0; i < list.length; i++) {
             b = list[i];
             da = b.len + " 1000"; off = String(-b.s);
+            // Destello: la línea se ensancha y se ilumina un instante.
+            fw = 1 + b.flash * 0.9;
             for (e = 0; e < b.els.length; e++) {
-              b.els[e].setAttribute("stroke-dasharray", da);
-              b.els[e].setAttribute("stroke-dashoffset", off);
+              item = b.els[e];
+              item.el.setAttribute("stroke-dasharray", da);
+              item.el.setAttribute("stroke-dashoffset", off);
+              item.el.style.strokeWidth = (item.w * fw).toFixed(2);
+              item.el.style.opacity = Math.min(1, item.o + b.flash * 0.5).toFixed(2);
             }
           }
         }
