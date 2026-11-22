@@ -979,7 +979,7 @@
           return { lon: norm360(Math.atan2(yh, xh) / RAD), lat: Math.atan2(zh, Math.hypot(xh, yh)) / RAD };
         }
 
-        // Hora sidérea local; la longitud se estima de la zona horaria
+        // Hora sidérea local; la longitud es la del lugar (la zona horaria daba -90° en vez de -106°)
         var lastShadowMin = -1;
         function sunAzAlt(sLon, lst) {
           var eps = 23.4393 * RAD, lam = sLon * RAD, phi = 26.9 * RAD;
@@ -999,7 +999,7 @@
 
         function lstHours(now, jd) {
           var gmst = (18.697374558 + 24.06570982441908 * (jd - 2451545.0)) % 24;
-          var lonDeg = -now.getTimezoneOffset() * 0.25;
+          var lonDeg = -105.85; // misma zona que la latitud fija (26.9° N): norte de Chihuahua
           return ((gmst + lonDeg / 15) % 24 + 24) % 24;
         }
         // Altura del Sol sobre el horizonte (latitud del norte de México)
@@ -1617,14 +1617,12 @@
     </script>
     <script>
       // Service worker: tras la primera visita, el reloj abre sin conexión.
-      // Se intenta primero con ámbito en la raíz de la página (lo que la
-      // app necesita para controlar index.html); si el servidor no lo
-      // permite, se registra con el ámbito por defecto del archivo.
+      // sw.js está en la raíz, junto a index.html, para que su ámbito cubra la
+      // página (un service worker dentro de assets/ no puede controlar index.html
+      // en GitHub Pages, que no permite la cabecera Service-Worker-Allowed).
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", function () {
-          navigator.serviceWorker.register("assets/sw.js", { scope: "./" })
-            .catch(function () { return navigator.serviceWorker.register("assets/sw.js"); })
-            .catch(function () {});
+          navigator.serviceWorker.register("sw.js").catch(function () {});
         });
       }
     </script>

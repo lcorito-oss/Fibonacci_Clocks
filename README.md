@@ -15,4 +15,4 @@ Reloj en una sola página (`index.html`, sin dependencias) con dos vistas: manec
 - Hora digital en formato 12 horas.
 
 ## Instalación
-Se puede instalar como app (PWA) en iOS, Windows y Android. Los archivos (manifiesto, service worker e iconos) están en la carpeta `assets/`.
+Se puede instalar como app (PWA) en iOS, Windows y Android. El service worker (`sw.js`) va en la raíz, junto a `index.html`, para poder controlar la página; el manifiesto y los iconos están en `assets/`.
