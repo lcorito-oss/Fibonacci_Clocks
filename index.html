@@ -1236,12 +1236,14 @@
             tk.setAttribute("d", td); tk.setAttribute("class", "min-tick");
             numsG.appendChild(tk); minTickEls[j] = tk;
             // Rayitas de cada minuto entre esta marca de 5 y la
-            // siguiente: más chicas y tenues, para contar el minuto
-            // exacto entre dos arcos (6° de espiral por minuto).
+            // siguiente: van en el hueco libre entre los dos arcos
+            // grandes, no encima del segmento, más chicas y tenues,
+            // para contar el minuto exacto entre dos arcos.
+            var gapW = 30 - Ls / K, Ls1 = Ls * 0.4;
             for (var k = 1; k <= 4; k++) {
-              var t0 = th - 6 * k, Ls1 = Ls * 0.55, td1 = "";
+              var t0 = th - Ls / K - gapW * k / 5, td1 = "";
               for (var i1 = 0; i1 <= 6; i1++) {
-                var q1 = spm(t0 - (Ls1 / K) * (1 - i1 / 6));
+                var q1 = spm(t0 - (Ls1 / K) * (0.5 - i1 / 6));
                 td1 += (i1 ? "L" : "M") + q1.x.toFixed(1) + " " + q1.y.toFixed(1);
               }
               var ts = document.createElementNS(NS2, "path");
