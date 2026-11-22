@@ -722,20 +722,29 @@
         // vienen: rebotan en los extremos de la espiral y, al chocar
         // entre sí, intercambian velocidades.
         var BOUNCE_H = [
-          { len: 70, s: 60, v: 95, c: "#ffd27a", g: "#f5b942" },
-          { len: 55, s: 430, v: -150, c: "#ffb84d", g: "#e69a1f" },
-          { len: 45, s: 760, v: 210, c: "#ffe9a8", g: "#f7cf6b" }
+          { len: 70, s: 60, v: 95, gravity: 32, restitution: 0.92, pulse: 1.0, flashDecay: 4.4, c: "#ffd27a", g: "#f5b942" },
+          { len: 55, s: 430, v: -150, gravity: 40, restitution: 0.95, pulse: 1.25, flashDecay: 5.0, c: "#ffb84d", g: "#e69a1f" },
+          { len: 45, s: 760, v: 210, gravity: 28, restitution: 0.89, pulse: 1.1, flashDecay: 3.8, c: "#ffe9a8", g: "#f7cf6b" }
         ];
         var BOUNCE_M = [
-          { len: 42, s: 80, v: 130, c: "#ff7fb0", g: "#c2185b" },
-          { len: 32, s: 420, v: -200, c: "#ff5c8a", g: "#a3134a" },
-          { len: 24, s: 700, v: 280, c: "#ffa8c8", g: "#d14d7e" }
+          { len: 42, s: 80, v: 130, gravity: 44, restitution: 0.90, pulse: 1.15, flashDecay: 4.7, c: "#ff7fb0", g: "#c2185b" },
+          { len: 32, s: 420, v: -200, gravity: 36, restitution: 0.94, pulse: 1.35, flashDecay: 5.2, c: "#ff5c8a", g: "#a3134a" },
+          { len: 24, s: 700, v: 280, gravity: 50, restitution: 0.88, pulse: 1.05, flashDecay: 3.9, c: "#ffa8c8", g: "#d14d7e" }
+        ];
+        // Cada tramo lleva un perfil propio y una paleta neón que cambia
+        // suavemente con la luz solar, sin salir de dorados y rosas.
+        var TONE_H = [
+          { day: ["#ffdf3a", "#ff9700"], night: ["#ffb72b", "#e85600"] },
+          { day: ["#ff9c1a", "#ff4b00"], night: ["#f78620", "#db3900"] },
+          { day: ["#fff18a", "#ffc21a"], night: ["#f5d65f", "#eb8700"] }
+        ];
+        var TONE_M = [
+          { day: ["#ff45d4", "#ff00a8"], night: ["#e43ca9", "#ae006e"] },
+          { day: ["#ff3d70", "#ff004f"], night: ["#de3159", "#a5003a"] },
+          { day: ["#ff9df0", "#ff36d8"], night: ["#de76c5", "#a12d93"] }
         ];
         var bouncersH = [], bouncersM = [];
-        // Gravedad suave dentro de la espiral (unidades de pathLength
-        // por segundo al cuadrado, hacia el centro): al subir se frena
-        // y al bajar acelera un poquito.
-        var GRAV = 18;
+        var bounceNightMix = 0;
         var SP_A = 5.36, SP_B = -0.0053468; // espiral áurea: el radio crece ×φ cada 90° (~2.5 vueltas visibles)
         var PHI = { 1: 60, 2: 64, 3: 68, 4: 72, 5: 76, 6: 80,
                     7: -124, 8: -120, 9: -116, 10: -112, 11: -108, 12: -104 };
@@ -860,7 +869,7 @@
           // Tres líneas que rebotan en la espiral de horas: el mismo
           // juego en los dos grupos de la espiral (spiralArm y
           // spiralArm2), compartiendo posición y velocidad.
-          BOUNCE_H.forEach(function (b) {
+          BOUNCE_H.forEach(function (b, index) {
             var els = [];
             [spiralEl, spiralEl2].forEach(function (g) {
               [["flow-glow flow-glow-h", b.g, 8, 0.28], ["flow flow-h", b.c, 2.2, 1]].forEach(function (cc) {
@@ -872,10 +881,10 @@
                 fp.setAttribute("stroke-dasharray", b.len + " 1000");
                 fp.setAttribute("stroke-dashoffset", String(-b.s));
                 g.appendChild(fp);
-                els.push({ el: fp, w: cc[2], o: cc[3] });
+                els.push({ el: fp, w: cc[2], o: cc[3], glow: cc[0].indexOf("flow-glow") === 0 });
               });
             });
-            bouncersH.push({ els: els, len: b.len, s: b.s, v: b.v, flash: 0 });
+            bouncersH.push({ els: els, len: b.len, s: b.s, v: b.v, flash: 0, personality: { gravity: b.gravity, restitution: b.restitution, pulse: b.pulse, flashDecay: b.flashDecay, tone: TONE_H[index] } });
           });
           // Las 12 espirales de las horas, grabadas, como en la imagen
           // de referencia: la misma curva logarítmica de la espiral
@@ -1171,6 +1180,7 @@
           var lst = lstHours(now, jd);
           // Aurora: sigue la oscuridad real (altura del Sol bajo el horizonte)
           var dark = Math.min(1, Math.max(0, (-sunAlt(sLon, lst) - 3) / 11));
+          bounceNightMix = dark;
           auroraEl.style.opacity = (dark * 0.9).toFixed(2);
           var mk2 = Math.floor(+now / 60000);
           if (mk2 !== lastShadowMin) {
@@ -1268,7 +1278,7 @@
             mc += (f ? "L" : "M") + pm.x.toFixed(1) + " " + pm.y.toFixed(1);
           }
           // Tres líneas que rebotan en la espiral del minutero.
-          BOUNCE_M.forEach(function (b) {
+          BOUNCE_M.forEach(function (b, index) {
             var els = [];
             [["flow-glow flow-glow-m", b.g, 5, 0.4], ["flow flow-m", b.c, 1.4, 1]].forEach(function (cc) {
               var fp = document.createElementNS(NS2, "path");
@@ -1281,7 +1291,7 @@
               handMinute.appendChild(fp);
               els.push({ el: fp, w: cc[2], o: cc[3] });
             });
-            bouncersM.push({ els: els, len: b.len, s: b.s, v: b.v, flash: 0 });
+            bouncersM.push({ els: els, len: b.len, s: b.s, v: b.v, flash: 0, personality: { gravity: b.gravity, restitution: b.restitution, pulse: b.pulse, flashDecay: b.flashDecay, tone: TONE_M[index] } });
           });
         })();
 
@@ -1503,40 +1513,39 @@
           handsEl.classList.toggle("hide-nums", on);
         });
 
+        function mixTone(day, night, amount) {
+          var a = parseInt(day.slice(1), 16), b = parseInt(night.slice(1), 16);
+          var r = Math.round(((a >> 16) & 255) * (1 - amount) + ((b >> 16) & 255) * amount);
+          var g = Math.round(((a >> 8) & 255) * (1 - amount) + ((b >> 8) & 255) * amount);
+          var bl = Math.round((a & 255) * (1 - amount) + (b & 255) * amount);
+          return "#" + ((1 << 24) | (r << 16) | (g << 8) | bl).toString(16).slice(1);
+        }
+
         // Anima las líneas que rebotan dentro de las espirales.
         function stepBouncers(list, dt) {
           var i, j, e, b, a, c, ca, cc, overlap, tmp, dir, da, off, fw, item;
           var minA, maxA, minC, maxC, wantA, wantC, pushC, newA, newC;
           for (i = 0; i < list.length; i++) {
             b = list[i];
-            // Gravedad: al subir (v < 0) se frena, al bajar (v > 0)
-            // acelera un poquito.
-            b.v += GRAV * dt;
+            // Cada tramo tiene gravedad y elasticidad propias: al subir
+            // pierde velocidad; al bajar, la gravedad lo acelera.
+            b.v += b.personality.gravity * dt;
             b.s += b.v * dt;
             var maxS = 1000 - b.len;
-            // Rebote con reflejo del pequeño sobrante y una pérdida leve de
-            // energía: evita el corte seco y mantiene un movimiento continuo.
             if (b.s < 0) {
               b.s = Math.min(maxS, -b.s);
-              b.v = Math.max(55, Math.abs(b.v) * 0.94);
+              b.v = Math.max(55, Math.abs(b.v) * b.personality.restitution);
               b.flash = Math.max(b.flash, 0.9);
             } else if (b.s > maxS) {
               b.s = Math.max(0, maxS - (b.s - maxS));
-              b.v = -Math.max(55, Math.abs(b.v) * 0.94);
+              b.v = -Math.max(55, Math.abs(b.v) * b.personality.restitution);
               b.flash = Math.max(b.flash, 0.9);
             }
-            // El resplandor cae con suavidad tras cada choque.
             if (b.flash > 0) {
-              b.flash *= Math.exp(-dt * 4.5);
+              b.flash *= Math.exp(-dt * b.personality.flashDecay);
               if (b.flash < 0.015) b.flash = 0;
             }
           }
-          // Choque entre dos líneas: intercambian velocidades (como dos
-          // bolas iguales) y se separan para no quedarse pegadas; además
-          // les queda un destello breve. Si una queda pegada a un
-          // extremo, la otra se aparta todo lo que falta. Se repasa dos
-          // veces por si al separar una pareja se junta otra; en el
-          // repaso solo se separan, sin volver a intercambiar velocidades.
           var pass, any;
           for (pass = 0; pass < 2; pass++) {
             any = false;
@@ -1549,6 +1558,8 @@
                   any = true;
                   if (pass === 0) {
                     tmp = a.v; a.v = c.v; c.v = tmp;
+                    // El choque transmite el perfil entero al otro tramo.
+                    tmp = a.personality; a.personality = c.personality; c.personality = tmp;
                     a.flash = 1; c.flash = 1;
                   }
                   dir = cc >= ca ? 1 : -1;
@@ -1568,12 +1579,19 @@
           for (i = 0; i < list.length; i++) {
             b = list[i];
             da = b.len + " 1000"; off = String(-b.s);
-            // Destello: la línea se ensancha y se ilumina un instante.
-            fw = 1 + b.flash * 1.15;
+            var tone = b.personality.tone;
+            var coreTone = mixTone(tone.day[0], tone.night[0], bounceNightMix);
+            var glowTone = mixTone(tone.day[1], tone.night[1], bounceNightMix);
+            fw = 1 + b.flash * b.personality.pulse;
             for (e = 0; e < b.els.length; e++) {
               item = b.els[e];
               item.el.setAttribute("stroke-dasharray", da);
               item.el.setAttribute("stroke-dashoffset", off);
+              var strokeTone = item.glow ? glowTone : coreTone;
+              item.el.style.stroke = strokeTone;
+              item.el.style.filter = item.glow
+                ? "drop-shadow(0 0 5px " + strokeTone + ")"
+                : "drop-shadow(0 0 3px " + strokeTone + ") drop-shadow(0 0 7px " + strokeTone + ")";
               item.el.style.strokeWidth = (item.w * fw).toFixed(2);
               item.el.style.opacity = Math.min(1, item.o + b.flash * 0.5).toFixed(2);
             }
