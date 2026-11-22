@@ -274,19 +274,19 @@
       .hub { fill: var(--p-hl); }
       .hand-spiral { fill: none; stroke: var(--p-hl); stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
       .hub-dot { fill: var(--p-num); stroke: none; opacity: 0.7; }
-      /* Flujo luminoso sobre las espirales */
+      /* Líneas que rebotan dentro de las espirales: tres por espiral,
+         cada una a su velocidad. El movimiento lo lleva JavaScript
+         (stroke-dasharray y stroke-dashoffset), no una animación CSS. */
       .flow, .flow-glow {
         fill: none;
         stroke-linecap: round;
         pointer-events: none;
-        animation: flowRun 7s linear infinite;
       }
-      .flow-h { stroke: #ffd27a; stroke-width: 2.2; stroke-dasharray: 60 440; }
-      .flow-glow-h { stroke: #f5b942; stroke-width: 8; opacity: 0.28; stroke-dasharray: 60 440; }
-      .flow-m { stroke: #ff7fb0; stroke-width: 1.4; stroke-dasharray: 36 464; animation-duration: 4.5s; }
-      .flow-glow-m { stroke: #c2185b; stroke-width: 5; opacity: 0.4; stroke-dasharray: 36 464; animation-duration: 4.5s; }
-      @keyframes flowRun { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -500; } }
-      @media (prefers-reduced-motion: reduce) { .flow, .flow-glow { animation: none; display: none; } }
+      .flow-h { stroke: #ffd27a; stroke-width: 2.2; }
+      .flow-glow-h { stroke: #f5b942; stroke-width: 8; opacity: 0.28; }
+      .flow-m { stroke: #ff7fb0; stroke-width: 1.4; }
+      .flow-glow-m { stroke: #c2185b; stroke-width: 5; opacity: 0.4; }
+      @media (prefers-reduced-motion: reduce) { .flow, .flow-glow { display: none; } }
       /* ---------- Cielo vivo de la placa ---------- */
       .aurora {
         position: absolute;
@@ -712,6 +712,23 @@
         // dos arcos: del 7 al 12 subiendo por la izquierda (el 7 cerca
         // del centro, el 12 arriba) y del 1 al 6 bajando por la derecha.
         var CENTER = { x: 320, y: 388 };
+        // Líneas que rebotan dentro de las espirales: tres por espiral
+        // (horas y minutos), cada una con su largo y su velocidad
+        // (unidades de pathLength por segundo; el camino mide 1000).
+        // En lugar de entrar desde afuera y salir por el centro, van y
+        // vienen: rebotan en los extremos de la espiral y, al chocar
+        // entre sí, intercambian velocidades.
+        var BOUNCE_H = [
+          { len: 70, s: 60, v: 95 },
+          { len: 55, s: 430, v: -150 },
+          { len: 45, s: 760, v: 210 }
+        ];
+        var BOUNCE_M = [
+          { len: 42, s: 80, v: 130 },
+          { len: 32, s: 420, v: -200 },
+          { len: 24, s: 700, v: 280 }
+        ];
+        var bouncersH = [], bouncersM = [];
         var SP_A = 5.36, SP_B = -0.0053468; // espiral áurea: el radio crece ×φ cada 90° (~2.5 vueltas visibles)
         var PHI = { 1: 60, 2: 64, 3: 68, 4: 72, 5: 76, 6: 80,
                     7: -124, 8: -120, 9: -116, 10: -112, 11: -108, 12: -104 };
@@ -827,20 +844,30 @@
           var d = "M" + Lf.join("L") + "L" + Rt.reverse().join("L") + "Z";
           document.getElementById("spiralPath").setAttribute("d", d);
           document.getElementById("spiralPathOut").setAttribute("d", d);
-          // Flujo luminoso: línea central de la espiral de horas
+          // Línea central de la espiral de horas (para las líneas que rebotan)
           var cl = "";
           for (var fi = 0; fi <= 640; fi++) {
             var thf = thMin + (thMax - thMin) * fi / 640, pf = polar(spiralR(thf), thf);
             cl += (fi ? "L" : "M") + pf.x.toFixed(1) + " " + pf.y.toFixed(1);
           }
-          [spiralEl, spiralEl2].forEach(function (g) {
-            ["flow-glow flow-glow-h", "flow flow-h"].forEach(function (c) {
-              var fp = document.createElementNS(NS, "path");
-              fp.setAttribute("d", cl);
-              fp.setAttribute("pathLength", "1000");
-              fp.setAttribute("class", c);
-              g.appendChild(fp);
+          // Tres líneas que rebotan en la espiral de horas: el mismo
+          // juego en los dos grupos de la espiral (spiralArm y
+          // spiralArm2), compartiendo posición y velocidad.
+          BOUNCE_H.forEach(function (b) {
+            var els = [];
+            [spiralEl, spiralEl2].forEach(function (g) {
+              ["flow-glow flow-glow-h", "flow flow-h"].forEach(function (c) {
+                var fp = document.createElementNS(NS, "path");
+                fp.setAttribute("d", cl);
+                fp.setAttribute("pathLength", "1000");
+                fp.setAttribute("class", c);
+                fp.setAttribute("stroke-dasharray", b.len + " 1000");
+                fp.setAttribute("stroke-dashoffset", String(-b.s));
+                g.appendChild(fp);
+                els.push(fp);
+              });
             });
+            bouncersH.push({ els: els, len: b.len, s: b.s, v: b.v });
           });
           // Las 12 espirales de las horas, grabadas, como en la imagen
           // de referencia: la misma curva logarítmica de la espiral
@@ -1218,18 +1245,26 @@
           var p = document.createElementNS(NS2, "path");
           p.setAttribute("d", "M" + Lf.join("L") + "L" + Rt.reverse().join("L") + "Z"); p.setAttribute("class", "hand-min");
           handMinute.textContent = ""; handMinute.appendChild(p);
-          // Flujo luminoso: línea central de la espiral del minutero
+          // Línea central de la espiral del minutero (para las líneas que rebotan)
           var mc = "";
           for (var f = 0; f <= 520; f++) {
             var tf = thA + (thZ - thA) * f / 520, pm = polar(mR(tf), tf - 30);
             mc += (f ? "L" : "M") + pm.x.toFixed(1) + " " + pm.y.toFixed(1);
           }
-          ["flow-glow flow-glow-m", "flow flow-m"].forEach(function (c) {
-            var fp = document.createElementNS(NS2, "path");
-            fp.setAttribute("d", mc);
-            fp.setAttribute("pathLength", "1000");
-            fp.setAttribute("class", c);
-            handMinute.appendChild(fp);
+          // Tres líneas que rebotan en la espiral del minutero.
+          BOUNCE_M.forEach(function (b) {
+            var els = [];
+            ["flow-glow flow-glow-m", "flow flow-m"].forEach(function (c) {
+              var fp = document.createElementNS(NS2, "path");
+              fp.setAttribute("d", mc);
+              fp.setAttribute("pathLength", "1000");
+              fp.setAttribute("class", c);
+              fp.setAttribute("stroke-dasharray", b.len + " 1000");
+              fp.setAttribute("stroke-dashoffset", String(-b.s));
+              handMinute.appendChild(fp);
+              els.push(fp);
+            });
+            bouncersM.push({ els: els, len: b.len, s: b.s, v: b.v });
           });
         })();
 
@@ -1450,6 +1485,53 @@
           clockEl.classList.toggle("hide-nums", on);
           handsEl.classList.toggle("hide-nums", on);
         });
+
+        // Anima las líneas que rebotan dentro de las espirales.
+        function stepBouncers(list, dt) {
+          var i, j, e, b, a, c, ca, cc, overlap, tmp, dir, da, off;
+          for (i = 0; i < list.length; i++) {
+            b = list[i];
+            b.s += b.v * dt;
+            if (b.s < 0) { b.s = 0; b.v = Math.abs(b.v); }
+            if (b.s + b.len > 1000) { b.s = 1000 - b.len; b.v = -Math.abs(b.v); }
+          }
+          // Choque entre dos líneas: intercambian velocidades (como dos
+          // bolas iguales) y se separan para no quedarse pegadas.
+          for (i = 0; i < list.length; i++) {
+            for (j = i + 1; j < list.length; j++) {
+              a = list[i]; c = list[j];
+              ca = a.s + a.len / 2; cc = c.s + c.len / 2;
+              overlap = (a.len + c.len) / 2 - Math.abs(ca - cc);
+              if (overlap > 0) {
+                tmp = a.v; a.v = c.v; c.v = tmp;
+                dir = cc >= ca ? 1 : -1;
+                ca -= dir * overlap / 2; cc += dir * overlap / 2;
+                a.s = Math.max(0, Math.min(1000 - a.len, ca - a.len / 2));
+                c.s = Math.max(0, Math.min(1000 - c.len, cc - c.len / 2));
+              }
+            }
+          }
+          for (i = 0; i < list.length; i++) {
+            b = list[i];
+            da = b.len + " 1000"; off = String(-b.s);
+            for (e = 0; e < b.els.length; e++) {
+              b.els[e].setAttribute("stroke-dasharray", da);
+              b.els[e].setAttribute("stroke-dashoffset", off);
+            }
+          }
+        }
+        var lastBounce = null;
+        function bounceLoop(ts) {
+          if (lastBounce === null) lastBounce = ts;
+          var dt = Math.min(0.05, (ts - lastBounce) / 1000);
+          lastBounce = ts;
+          stepBouncers(bouncersH, dt);
+          stepBouncers(bouncersM, dt);
+          requestAnimationFrame(bounceLoop);
+        }
+        if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+          requestAnimationFrame(bounceLoop);
+        }
 
         tick();
         setInterval(tick, 500);

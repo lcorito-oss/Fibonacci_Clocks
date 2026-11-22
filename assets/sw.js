@@ -1,7 +1,7 @@
 /* Reloj de Fibonacci — service worker: guarda la página, sus iconos y
    la foto de la Luna para que el reloj abra sin conexión tras la
    primera visita, ya instalado o en el navegador. */
-var CACHE = "reloj-fibonacci-v9";
+var CACHE = "reloj-fibonacci-v10";
 var INDEX = "../index.html";
 var PRECACHE = [
   "../index.html",
