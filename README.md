@@ -8,7 +8,7 @@ Reloj en una sola página (`index.html`, sin dependencias) con dos vistas: manec
 - La hora en curso se enciende en rosa; la línea del minutero también va en otro color.
 - Luna con foto real, fase real y porcentaje, a la derecha debajo del 12.
 - Estrellas grabadas en la placa y cielo de fondo, que se actualizan a la fecha una vez al día.
-- Centro sutil: solo marcas tenues cada 5 minutos.
+- Lectura de minutos sobre la espiral Fibonacci: marcas largas cada 5 minutos y cuatro marcas sutiles entre ellas.
 
 ## Vista Cuadrados
 - Rejilla 8×5 con los cuadrados 5, 3, 2, 1, 1; rojo horas, verde minutos, azul ambas.
