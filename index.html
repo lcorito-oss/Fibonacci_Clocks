@@ -722,14 +722,14 @@
         // vienen: rebotan en los extremos de la espiral y, al chocar
         // entre sí, intercambian velocidades.
         var BOUNCE_H = [
-          { len: 70, s: 60, v: 95, gravity: 32, restitution: 0.92, pulse: 1.0, flashDecay: 4.4, c: "#ffd27a", g: "#f5b942" },
-          { len: 55, s: 430, v: -150, gravity: 40, restitution: 0.95, pulse: 1.25, flashDecay: 5.0, c: "#ffb84d", g: "#e69a1f" },
-          { len: 45, s: 760, v: 210, gravity: 28, restitution: 0.89, pulse: 1.1, flashDecay: 3.8, c: "#ffe9a8", g: "#f7cf6b" }
+          { len: 70, s: 60, v: 95, gravity: 32, restitution: 0.92, centerKick: 275, pulse: 1.0, flashDecay: 4.4, c: "#ffd27a", g: "#f5b942" },
+          { len: 55, s: 430, v: -150, gravity: 40, restitution: 0.95, centerKick: 245, pulse: 1.25, flashDecay: 5.0, c: "#ffb84d", g: "#e69a1f" },
+          { len: 45, s: 760, v: 210, gravity: 28, restitution: 0.89, centerKick: 290, pulse: 1.1, flashDecay: 3.8, c: "#ffe9a8", g: "#f7cf6b" }
         ];
         var BOUNCE_M = [
-          { len: 42, s: 80, v: 130, gravity: 44, restitution: 0.90, pulse: 1.15, flashDecay: 4.7, c: "#ff7fb0", g: "#c2185b" },
-          { len: 32, s: 420, v: -200, gravity: 36, restitution: 0.94, pulse: 1.35, flashDecay: 5.2, c: "#ff5c8a", g: "#a3134a" },
-          { len: 24, s: 700, v: 280, gravity: 50, restitution: 0.88, pulse: 1.05, flashDecay: 3.9, c: "#ffa8c8", g: "#d14d7e" }
+          { len: 42, s: 80, v: 130, gravity: 44, restitution: 0.90, centerKick: 260, pulse: 1.15, flashDecay: 4.7, c: "#ff7fb0", g: "#c2185b" },
+          { len: 32, s: 420, v: -200, gravity: 36, restitution: 0.94, centerKick: 280, pulse: 1.35, flashDecay: 5.2, c: "#ff5c8a", g: "#a3134a" },
+          { len: 24, s: 700, v: 280, gravity: 50, restitution: 0.88, centerKick: 300, pulse: 1.05, flashDecay: 3.9, c: "#ffa8c8", g: "#d14d7e" }
         ];
         // Cada tramo lleva un perfil propio y una paleta neón que cambia
         // suavemente con la luz solar, sin salir de dorados y rosas.
@@ -884,7 +884,7 @@
                 els.push({ el: fp, w: cc[2], o: cc[3], glow: cc[0].indexOf("flow-glow") === 0 });
               });
             });
-            bouncersH.push({ els: els, len: b.len, s: b.s, v: b.v, flash: 0, personality: { gravity: b.gravity, restitution: b.restitution, pulse: b.pulse, flashDecay: b.flashDecay, tone: TONE_H[index] } });
+            bouncersH.push({ els: els, len: b.len, s: b.s, v: b.v, flash: 0, personality: { gravity: b.gravity, restitution: b.restitution, centerKick: b.centerKick, pulse: b.pulse, flashDecay: b.flashDecay, tone: TONE_H[index] } });
           });
           // Las 12 espirales de las horas, grabadas, como en la imagen
           // de referencia: la misma curva logarítmica de la espiral
@@ -1291,7 +1291,7 @@
               handMinute.appendChild(fp);
               els.push({ el: fp, w: cc[2], o: cc[3] });
             });
-            bouncersM.push({ els: els, len: b.len, s: b.s, v: b.v, flash: 0, personality: { gravity: b.gravity, restitution: b.restitution, pulse: b.pulse, flashDecay: b.flashDecay, tone: TONE_M[index] } });
+            bouncersM.push({ els: els, len: b.len, s: b.s, v: b.v, flash: 0, personality: { gravity: b.gravity, restitution: b.restitution, centerKick: b.centerKick, pulse: b.pulse, flashDecay: b.flashDecay, tone: TONE_M[index] } });
           });
         })();
 
@@ -1538,7 +1538,8 @@
               b.flash = Math.max(b.flash, 0.9);
             } else if (b.s > maxS) {
               b.s = Math.max(0, maxS - (b.s - maxS));
-              b.v = -Math.max(55, Math.abs(b.v) * b.personality.restitution);
+              // Impulso distinto en el extremo central: evita que el tramo se quede allí.
+              b.v = -Math.max(b.personality.centerKick, Math.abs(b.v) * b.personality.restitution);
               b.flash = Math.max(b.flash, 0.9);
             }
             if (b.flash > 0) {
