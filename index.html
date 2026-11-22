@@ -1600,6 +1600,14 @@
         }
         var lastBounce = null;
         function bounceLoop(ts) {
+          // En la vista de Cuadrados las espirales están ocultas: no se
+          // animan ni se tocan sus estilos, para no gastar batería en el
+          // teléfono. Al volver a Manecillas se reanuda donde quedó.
+          if (handsEl.hidden) {
+            lastBounce = null;
+            requestAnimationFrame(bounceLoop);
+            return;
+          }
           if (lastBounce === null) lastBounce = ts;
           var dt = Math.min(0.05, (ts - lastBounce) / 1000);
           lastBounce = ts;
