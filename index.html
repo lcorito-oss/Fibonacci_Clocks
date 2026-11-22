@@ -1513,10 +1513,23 @@
             // acelera un poquito.
             b.v += GRAV * dt;
             b.s += b.v * dt;
-            if (b.s < 0) { b.s = 0; b.v = Math.abs(b.v); }
-            if (b.s + b.len > 1000) { b.s = 1000 - b.len; b.v = -Math.abs(b.v); }
-            // El destello del choque se apaga poco a poco.
-            if (b.flash > 0) b.flash = Math.max(0, b.flash - dt / 0.35);
+            var maxS = 1000 - b.len;
+            // Rebote con reflejo del pequeño sobrante y una pérdida leve de
+            // energía: evita el corte seco y mantiene un movimiento continuo.
+            if (b.s < 0) {
+              b.s = Math.min(maxS, -b.s);
+              b.v = Math.max(55, Math.abs(b.v) * 0.94);
+              b.flash = Math.max(b.flash, 0.9);
+            } else if (b.s > maxS) {
+              b.s = Math.max(0, maxS - (b.s - maxS));
+              b.v = -Math.max(55, Math.abs(b.v) * 0.94);
+              b.flash = Math.max(b.flash, 0.9);
+            }
+            // El resplandor cae con suavidad tras cada choque.
+            if (b.flash > 0) {
+              b.flash *= Math.exp(-dt * 4.5);
+              if (b.flash < 0.015) b.flash = 0;
+            }
           }
           // Choque entre dos líneas: intercambian velocidades (como dos
           // bolas iguales) y se separan para no quedarse pegadas; además
@@ -1556,7 +1569,7 @@
             b = list[i];
             da = b.len + " 1000"; off = String(-b.s);
             // Destello: la línea se ensancha y se ilumina un instante.
-            fw = 1 + b.flash * 0.9;
+            fw = 1 + b.flash * 1.15;
             for (e = 0; e < b.els.length; e++) {
               item = b.els[e];
               item.el.setAttribute("stroke-dasharray", da);
