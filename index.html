@@ -341,8 +341,9 @@
       .min-tick { fill: none; stroke: var(--p-tick); stroke-width: 2.2; stroke-linecap: round; opacity: 0.75; }
       .min-num.on { display: inline; fill: var(--p-hl); }
       .min-tick.on { stroke: var(--p-hl); stroke-width: 3; opacity: 1; }
-      /* Rayitas de cada minuto entre las marcas de 5: más chicas y
-         tenues, para contar el minuto exacto entre dos arcos. */
+      /* Rayitas de cada minuto entre las marcas de 5: radiales como
+         en un reloj normal, más chicas y tenues, para contar el
+         minuto exacto entre dos arcos. */
       .min-tick-sub { fill: none; stroke: var(--p-tick); stroke-width: 1.1; stroke-linecap: round; opacity: 0.35; }
       .min-tick-sub.on { stroke: var(--p-hl); stroke-width: 1.8; opacity: 1; }
       .plate-nums { transition: opacity 0.3s ease; }
@@ -1236,16 +1237,18 @@
             tk.setAttribute("d", td); tk.setAttribute("class", "min-tick");
             numsG.appendChild(tk); minTickEls[j] = tk;
             // Rayitas de cada minuto entre esta marca de 5 y la
-            // siguiente: van en el hueco libre entre los dos arcos
-            // grandes, no encima del segmento, más chicas y tenues,
-            // para contar el minuto exacto entre dos arcos.
-            var gapW = 30 - Ls / K, Ls1 = Ls * 0.4;
+            // siguiente: como en el arco de un reloj normal, una
+            // rayita chica por minuto cruzando la espiral (radial),
+            // en el hueco entre los dos segmentos grandes, no encima
+            // de ellos; la grande es la de cada 5.
+            var gapW = 30 - Ls / K, tickLen = 5;
             for (var k = 1; k <= 4; k++) {
-              var t0 = th - Ls / K - gapW * k / 5, td1 = "";
-              for (var i1 = 0; i1 <= 6; i1++) {
-                var q1 = spm(t0 - (Ls1 / K) * (0.5 - i1 / 6));
-                td1 += (i1 ? "L" : "M") + q1.x.toFixed(1) + " " + q1.y.toFixed(1);
-              }
+              var t0 = th - Ls / K - gapW * k / 5;
+              var q1 = spm(t0);
+              var dx = q1.x - CENTER.x, dy = q1.y - CENTER.y;
+              var rl = Math.sqrt(dx * dx + dy * dy), ux = dx / rl, uy = dy / rl;
+              var td1 = "M" + (q1.x - ux * tickLen).toFixed(1) + " " + (q1.y - uy * tickLen).toFixed(1)
+                      + "L" + (q1.x + ux * tickLen).toFixed(1) + " " + (q1.y + uy * tickLen).toFixed(1);
               var ts = document.createElementNS(NS2, "path");
               ts.setAttribute("d", td1); ts.setAttribute("class", "min-tick-sub");
               numsG.appendChild(ts);
