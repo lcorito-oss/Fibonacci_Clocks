@@ -1600,7 +1600,7 @@
               item = b.els[e];
               item.el.setAttribute("cx", pt.x.toFixed(1));
               item.el.setAttribute("cy", pt.y.toFixed(1));
-              item.el.setAttribute("r", (item.r * (1 + b.flash * 0.35)).toFixed(2));
+              item.el.setAttribute("r", (item.r * (1 + b.flash * 0.8)).toFixed(2));
               // Destello al chocar: al impactar, la pelotita se pone
               // blanca un instante y vuelve a su color al apagarse el flash.
               var fillTone = b.flash > 0 ? mixTone(coreTone, "#ffffff", Math.min(1, b.flash)) : coreTone;
