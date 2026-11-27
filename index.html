@@ -221,7 +221,7 @@
            y de las líneas, para que se lean también cuando la espiral
            pasa por detrás de ellos. */
         --p-num: #f5b942;
-        --p-spiral: #e8e6df;
+        --p-spiral: #4da3ff;
         --p-min: #cfccc2;
         --p-tick: #ece9e0;
         --p-dial: rgba(236, 233, 224, 0.5);
@@ -257,7 +257,7 @@
          la foto. El número de la hora en curso y su marquita se
          encienden en rosa. */
       .spiral-arm { fill: var(--p-spiral); stroke: none; }
-      .spiral-out { fill: #e7e9ee; stroke: none; }
+      .spiral-out { fill: var(--p-spiral); stroke: none; }
       .ghost { fill: none; stroke: var(--p-spiral); stroke-width: 1; opacity: var(--p-ghostop, 0.2); }
       .cast { filter: drop-shadow(calc(var(--sx, 6px) * 3) calc(var(--sy, 10px) * 3) calc(var(--sb, 14px) * 1.8) rgba(8, 10, 14, var(--so, 0.4))); }
       .cast2 { filter: drop-shadow(calc(var(--sx, 6px) * 1.6) calc(var(--sy, 10px) * 1.6) calc(var(--sb, 14px) * 0.9) rgba(8, 10, 14, var(--so, 0.4))); --amp: 2.5px; }
@@ -270,9 +270,9 @@
       .dial-face { display: none; }
       .dial-ring { display: none; }
       .dial-tick { stroke: var(--p-dial); stroke-linecap: round; }
-      .hand-min { fill: var(--p-hl); opacity: 1; }
+      .hand-min { fill: #ff3b5c; opacity: 1; }
       .hub { fill: var(--p-hl); }
-      .hand-spiral { fill: none; stroke: var(--p-hl); stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+      .hand-spiral { fill: none; stroke: #ff3b5c; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
       .hub-dot { fill: var(--p-num); stroke: none; opacity: 0.7; }
       /* Pelotitas que rebotan dentro de las espirales: tres por espiral,
          cada una a su velocidad. El movimiento lo lleva JavaScript
