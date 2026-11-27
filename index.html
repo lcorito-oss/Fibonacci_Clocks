@@ -1544,6 +1544,22 @@
               if (b.flash < 0.015) b.flash = 0;
             }
           }
+          // Si las tres chocan juntas, se invierten: cada una rebota
+          // hacia atrás (su velocidad cambia de signo) en lugar de
+          // intercambiar velocidades entre pares.
+          var triple = false;
+          if (list.length === 3) {
+            var t0 = list[0].s + list[0].len / 2, t1 = list[1].s + list[1].len / 2, t2 = list[2].s + list[2].len / 2;
+            triple = (list[0].len + list[1].len) / 2 - Math.abs(t0 - t1) > 0
+              && (list[0].len + list[2].len) / 2 - Math.abs(t0 - t2) > 0
+              && (list[1].len + list[2].len) / 2 - Math.abs(t1 - t2) > 0;
+          }
+          if (triple) {
+            for (i = 0; i < list.length; i++) {
+              list[i].v = -list[i].v;
+              list[i].flash = 1;
+            }
+          }
           var pass, any;
           for (pass = 0; pass < 2; pass++) {
             any = false;
@@ -1554,7 +1570,7 @@
                 overlap = (a.len + c.len) / 2 - Math.abs(ca - cc);
                 if (overlap > 0) {
                   any = true;
-                  if (pass === 0) {
+                  if (pass === 0 && !triple) {
                     tmp = a.v; a.v = c.v; c.v = tmp;
                     // El choque transmite el perfil entero al otro tramo.
                     tmp = a.personality; a.personality = c.personality; c.personality = tmp;
