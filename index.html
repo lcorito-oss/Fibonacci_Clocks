@@ -274,19 +274,14 @@
       .hub { fill: var(--p-hl); }
       .hand-spiral { fill: none; stroke: var(--p-hl); stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
       .hub-dot { fill: var(--p-num); stroke: none; opacity: 0.7; }
-      /* Líneas que rebotan dentro de las espirales: tres por espiral,
+      /* Pelotitas que rebotan dentro de las espirales: tres por espiral,
          cada una a su velocidad. El movimiento lo lleva JavaScript
-         (stroke-dasharray y stroke-dashoffset), no una animación CSS. */
-      .flow, .flow-glow {
-        fill: none;
-        stroke-linecap: round;
+         (posición del círculo sobre la espiral), no una animación CSS.
+         Sin glow: el drop-shadow saturaba la tarjeta gráfica. */
+      .ball {
         pointer-events: none;
       }
-      .flow-h { stroke: #ffd27a; stroke-width: 2.2; }
-      .flow-glow-h { stroke: #f5b942; stroke-width: 8; opacity: 0.28; }
-      .flow-m { stroke: #ff7fb0; stroke-width: 1.4; }
-      .flow-glow-m { stroke: #c2185b; stroke-width: 5; opacity: 0.4; }
-      @media (prefers-reduced-motion: reduce) { .flow, .flow-glow { display: none; } }
+      @media (prefers-reduced-motion: reduce) { .ball { display: none; } }
       /* ---------- Cielo vivo de la placa ---------- */
       .aurora {
         position: absolute;
@@ -715,23 +710,23 @@
         // dos arcos: del 7 al 12 subiendo por la izquierda (el 7 cerca
         // del centro, el 12 arriba) y del 1 al 6 bajando por la derecha.
         var CENTER = { x: 320, y: 388 };
-        // Líneas que rebotan dentro de las espirales: tres por espiral
-        // (horas y minutos), cada una con su largo y su velocidad
+        // Pelotitas que rebotan dentro de las espirales: tres por espiral
+        // (horas y minutos), cada una con su tamaño y su velocidad
         // (unidades de pathLength por segundo; el camino mide 1000).
         // En lugar de entrar desde afuera y salir por el centro, van y
         // vienen: rebotan en los extremos de la espiral y, al chocar
         // entre sí, intercambian velocidades.
         var BOUNCE_H = [
-          { len: 70, s: 60, v: 95, gravity: 32, restitution: 0.92, centerKick: 275, pulse: 1.0, flashDecay: 4.4, c: "#ffd27a", g: "#f5b942" },
-          { len: 55, s: 430, v: -150, gravity: 40, restitution: 0.95, centerKick: 245, pulse: 1.25, flashDecay: 5.0, c: "#ffb84d", g: "#e69a1f" },
-          { len: 45, s: 760, v: 210, gravity: 28, restitution: 0.89, centerKick: 290, pulse: 1.1, flashDecay: 3.8, c: "#ffe9a8", g: "#f7cf6b" }
+          { len: 9, s: 60, v: 95, gravity: 32, restitution: 0.92, centerKick: 275, pulse: 1.0, flashDecay: 4.4, r: 5, c: "#ffd27a", g: "#f5b942" },
+          { len: 8, s: 430, v: -150, gravity: 40, restitution: 0.95, centerKick: 245, pulse: 1.25, flashDecay: 5.0, r: 4.5, c: "#ffb84d", g: "#e69a1f" },
+          { len: 7, s: 760, v: 210, gravity: 28, restitution: 0.89, centerKick: 290, pulse: 1.1, flashDecay: 3.8, r: 4, c: "#ffe9a8", g: "#f7cf6b" }
         ];
         var BOUNCE_M = [
-          { len: 42, s: 80, v: 130, gravity: 44, restitution: 0.90, centerKick: 260, pulse: 1.15, flashDecay: 4.7, c: "#ff7fb0", g: "#c2185b" },
-          { len: 32, s: 420, v: -200, gravity: 36, restitution: 0.94, centerKick: 280, pulse: 1.35, flashDecay: 5.2, c: "#ff5c8a", g: "#a3134a" },
-          { len: 24, s: 700, v: 280, gravity: 50, restitution: 0.88, centerKick: 300, pulse: 1.05, flashDecay: 3.9, c: "#ffa8c8", g: "#d14d7e" }
+          { len: 12, s: 80, v: 130, gravity: 44, restitution: 0.90, centerKick: 260, pulse: 1.15, flashDecay: 4.7, r: 3.5, c: "#ff7fb0", g: "#c2185b" },
+          { len: 10, s: 420, v: -200, gravity: 36, restitution: 0.94, centerKick: 280, pulse: 1.35, flashDecay: 5.2, r: 3, c: "#ff5c8a", g: "#a3134a" },
+          { len: 9, s: 700, v: 280, gravity: 50, restitution: 0.88, centerKick: 300, pulse: 1.05, flashDecay: 3.9, r: 2.5, c: "#ffa8c8", g: "#d14d7e" }
         ];
-        // Cada tramo lleva un perfil propio y una paleta neón que cambia
+        // Cada pelotita lleva un perfil propio y una paleta neón que cambia
         // suavemente con la luz solar, sin salir de dorados y rosas.
         var TONE_H = [
           { day: ["#ffdf3a", "#ff9700"], night: ["#ffb72b", "#e85600"] },
@@ -860,31 +855,33 @@
           var d = "M" + Lf.join("L") + "L" + Rt.reverse().join("L") + "Z";
           document.getElementById("spiralPath").setAttribute("d", d);
           document.getElementById("spiralPathOut").setAttribute("d", d);
-          // Línea central de la espiral de horas (para las líneas que rebotan)
+          // Línea central de la espiral de horas (para las pelotitas que rebotan)
           var cl = "";
           for (var fi = 0; fi <= 640; fi++) {
             var thf = thMin + (thMax - thMin) * fi / 640, pf = polar(spiralR(thf), thf);
             cl += (fi ? "L" : "M") + pf.x.toFixed(1) + " " + pf.y.toFixed(1);
           }
-          // Tres líneas que rebotan en la espiral de horas: el mismo
+          // Tres pelotitas que rebotan en la espiral de horas: el mismo
           // juego en los dos grupos de la espiral (spiralArm y
           // spiralArm2), compartiendo posición y velocidad.
+          // Pelotita de referencia (sin trazo, no se ve) para medir la
+          // espiral: getPointAtLength da el punto de cada pelotita.
+          var refH = document.createElementNS(NS, "path");
+          refH.setAttribute("d", cl);
+          refH.setAttribute("pathLength", "1000");
+          refH.setAttribute("fill", "none");
+          spiralEl.appendChild(refH);
           BOUNCE_H.forEach(function (b, index) {
             var els = [];
             [spiralEl, spiralEl2].forEach(function (g) {
-              [["flow-glow flow-glow-h", b.g, 8, 0.28], ["flow flow-h", b.c, 2.2, 1]].forEach(function (cc) {
-                var fp = document.createElementNS(NS, "path");
-                fp.setAttribute("d", cl);
-                fp.setAttribute("pathLength", "1000");
-                fp.setAttribute("class", cc[0]);
-                fp.style.stroke = cc[1];
-                fp.setAttribute("stroke-dasharray", b.len + " 1000");
-                fp.setAttribute("stroke-dashoffset", String(-b.s));
-                g.appendChild(fp);
-                els.push({ el: fp, w: cc[2], o: cc[3], glow: cc[0].indexOf("flow-glow") === 0 });
-              });
+              var dot = document.createElementNS(NS, "circle");
+              dot.setAttribute("class", "ball");
+              dot.setAttribute("r", String(b.r));
+              dot.setAttribute("fill", b.c);
+              g.appendChild(dot);
+              els.push({ el: dot, r: b.r });
             });
-            bouncersH.push({ els: els, len: b.len, s: b.s, v: b.v, flash: 0, personality: { gravity: b.gravity, restitution: b.restitution, centerKick: b.centerKick, pulse: b.pulse, flashDecay: b.flashDecay, tone: TONE_H[index] } });
+            bouncersH.push({ els: els, len: b.len, s: b.s, v: b.v, flash: 0, ref: refH, refLen: null, personality: { gravity: b.gravity, restitution: b.restitution, centerKick: b.centerKick, pulse: b.pulse, flashDecay: b.flashDecay, tone: TONE_H[index] } });
           });
           // Las 12 espirales de las horas, grabadas, como en la imagen
           // de referencia: la misma curva logarítmica de la espiral
@@ -1271,27 +1268,27 @@
           var p = document.createElementNS(NS2, "path");
           p.setAttribute("d", "M" + Lf.join("L") + "L" + Rt.reverse().join("L") + "Z"); p.setAttribute("class", "hand-min");
           handMinute.textContent = ""; handMinute.appendChild(p);
-          // Línea central de la espiral del minutero (para las líneas que rebotan)
+          // Línea central de la espiral del minutero (para las pelotitas que rebotan)
           var mc = "";
           for (var f = 0; f <= 520; f++) {
             var tf = thA + (thZ - thA) * f / 520, pm = polar(mR(tf), tf - 30);
             mc += (f ? "L" : "M") + pm.x.toFixed(1) + " " + pm.y.toFixed(1);
           }
-          // Tres líneas que rebotan en la espiral del minutero.
+          // Tres pelotitas que rebotan en la espiral del minutero.
+          var refM = document.createElementNS(NS2, "path");
+          refM.setAttribute("d", mc);
+          refM.setAttribute("pathLength", "1000");
+          refM.setAttribute("fill", "none");
+          handMinute.appendChild(refM);
           BOUNCE_M.forEach(function (b, index) {
             var els = [];
-            [["flow-glow flow-glow-m", b.g, 5, 0.4], ["flow flow-m", b.c, 1.4, 1]].forEach(function (cc) {
-              var fp = document.createElementNS(NS2, "path");
-              fp.setAttribute("d", mc);
-              fp.setAttribute("pathLength", "1000");
-              fp.setAttribute("class", cc[0]);
-              fp.style.stroke = cc[1];
-              fp.setAttribute("stroke-dasharray", b.len + " 1000");
-              fp.setAttribute("stroke-dashoffset", String(-b.s));
-              handMinute.appendChild(fp);
-              els.push({ el: fp, w: cc[2], o: cc[3] });
-            });
-            bouncersM.push({ els: els, len: b.len, s: b.s, v: b.v, flash: 0, personality: { gravity: b.gravity, restitution: b.restitution, centerKick: b.centerKick, pulse: b.pulse, flashDecay: b.flashDecay, tone: TONE_M[index] } });
+            var dot = document.createElementNS(NS2, "circle");
+            dot.setAttribute("class", "ball");
+            dot.setAttribute("r", String(b.r));
+            dot.setAttribute("fill", b.c);
+            handMinute.appendChild(dot);
+            els.push({ el: dot, r: b.r });
+            bouncersM.push({ els: els, len: b.len, s: b.s, v: b.v, flash: 0, ref: refM, refLen: null, personality: { gravity: b.gravity, restitution: b.restitution, centerKick: b.centerKick, pulse: b.pulse, flashDecay: b.flashDecay, tone: TONE_M[index] } });
           });
         })();
 
@@ -1579,22 +1576,16 @@
           }
           for (i = 0; i < list.length; i++) {
             b = list[i];
-            da = b.len + " 1000"; off = String(-b.s);
             var tone = b.personality.tone;
             var coreTone = mixTone(tone.day[0], tone.night[0], bounceNightMix);
-            var glowTone = mixTone(tone.day[1], tone.night[1], bounceNightMix);
-            fw = 1 + b.flash * b.personality.pulse;
+            if (b.refLen == null) b.refLen = b.ref.getTotalLength();
+            var pt = b.ref.getPointAtLength(((b.s + b.len / 2) / 1000) * b.refLen);
             for (e = 0; e < b.els.length; e++) {
               item = b.els[e];
-              item.el.setAttribute("stroke-dasharray", da);
-              item.el.setAttribute("stroke-dashoffset", off);
-              var strokeTone = item.glow ? glowTone : coreTone;
-              item.el.style.stroke = strokeTone;
-              item.el.style.filter = item.glow
-                ? "drop-shadow(0 0 5px " + strokeTone + ")"
-                : "drop-shadow(0 0 3px " + strokeTone + ") drop-shadow(0 0 7px " + strokeTone + ")";
-              item.el.style.strokeWidth = (item.w * fw).toFixed(2);
-              item.el.style.opacity = Math.min(1, item.o + b.flash * 0.5).toFixed(2);
+              item.el.setAttribute("cx", pt.x.toFixed(1));
+              item.el.setAttribute("cy", pt.y.toFixed(1));
+              item.el.setAttribute("r", (item.r * (1 + b.flash * 0.35)).toFixed(2));
+              item.el.setAttribute("fill", coreTone);
             }
           }
         }
