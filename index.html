@@ -717,26 +717,26 @@
         // vienen: rebotan en los extremos de la espiral y, al chocar
         // entre sí, intercambian velocidades.
         var BOUNCE_H = [
-          { len: 9, s: 60, v: 95, gravity: 32, restitution: 0.92, centerKick: 275, pulse: 1.0, flashDecay: 4.4, r: 5, c: "#ffd27a", g: "#f5b942" },
-          { len: 8, s: 430, v: -150, gravity: 40, restitution: 0.95, centerKick: 245, pulse: 1.25, flashDecay: 5.0, r: 4.5, c: "#ffb84d", g: "#e69a1f" },
-          { len: 7, s: 760, v: 210, gravity: 28, restitution: 0.89, centerKick: 290, pulse: 1.1, flashDecay: 3.8, r: 4, c: "#ffe9a8", g: "#f7cf6b" }
+          { len: 9, s: 60, v: 95, gravity: 32, restitution: 0.92, centerKick: 275, pulse: 1.0, flashDecay: 4.4, r: 5, c: "#ff7fb0", g: "#c2185b" },
+          { len: 8, s: 430, v: -150, gravity: 40, restitution: 0.95, centerKick: 245, pulse: 1.25, flashDecay: 5.0, r: 4.5, c: "#ff5c8a", g: "#a3134a" },
+          { len: 7, s: 760, v: 210, gravity: 28, restitution: 0.89, centerKick: 290, pulse: 1.1, flashDecay: 3.8, r: 4, c: "#ffa8c8", g: "#d14d7e" }
         ];
         var BOUNCE_M = [
-          { len: 12, s: 80, v: 130, gravity: 44, restitution: 0.90, centerKick: 260, pulse: 1.15, flashDecay: 4.7, r: 3.5, c: "#ff7fb0", g: "#c2185b" },
-          { len: 10, s: 420, v: -200, gravity: 36, restitution: 0.94, centerKick: 280, pulse: 1.35, flashDecay: 5.2, r: 3, c: "#ff5c8a", g: "#a3134a" },
-          { len: 9, s: 700, v: 280, gravity: 50, restitution: 0.88, centerKick: 300, pulse: 1.05, flashDecay: 3.9, r: 2.5, c: "#ffa8c8", g: "#d14d7e" }
+          { len: 12, s: 80, v: 130, gravity: 44, restitution: 0.90, centerKick: 260, pulse: 1.15, flashDecay: 4.7, r: 3.5, c: "#ffd27a", g: "#f5b942" },
+          { len: 10, s: 420, v: -200, gravity: 36, restitution: 0.94, centerKick: 280, pulse: 1.35, flashDecay: 5.2, r: 3, c: "#ffb84d", g: "#e69a1f" },
+          { len: 9, s: 700, v: 280, gravity: 50, restitution: 0.88, centerKick: 300, pulse: 1.05, flashDecay: 3.9, r: 2.5, c: "#ffe9a8", g: "#f7cf6b" }
         ];
         // Cada pelotita lleva un perfil propio y una paleta neón que cambia
         // suavemente con la luz solar, sin salir de dorados y rosas.
         var TONE_H = [
-          { day: ["#ffdf3a", "#ff9700"], night: ["#ffb72b", "#e85600"] },
-          { day: ["#ff9c1a", "#ff4b00"], night: ["#f78620", "#db3900"] },
-          { day: ["#fff18a", "#ffc21a"], night: ["#f5d65f", "#eb8700"] }
-        ];
-        var TONE_M = [
           { day: ["#ff45d4", "#ff00a8"], night: ["#e43ca9", "#ae006e"] },
           { day: ["#ff3d70", "#ff004f"], night: ["#de3159", "#a5003a"] },
           { day: ["#ff9df0", "#ff36d8"], night: ["#de76c5", "#a12d93"] }
+        ];
+        var TONE_M = [
+          { day: ["#ffdf3a", "#ff9700"], night: ["#ffb72b", "#e85600"] },
+          { day: ["#ff9c1a", "#ff4b00"], night: ["#f78620", "#db3900"] },
+          { day: ["#fff18a", "#ffc21a"], night: ["#f5d65f", "#eb8700"] }
         ];
         var bouncersH = [], bouncersM = [];
         var bounceNightMix = 0;
